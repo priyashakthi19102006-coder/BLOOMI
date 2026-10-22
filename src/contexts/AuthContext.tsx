@@ -14,6 +14,8 @@ interface AuthContextValue {
   isConfigured: boolean
   loginTeacher: (email: string, password: string) => Promise<void>
   loginStudent: (registrationNumber: string, password: string) => Promise<void>
+  loginDemoStudent: () => void
+  loginDemoTeacher: () => void
   logout: () => Promise<void>
   clearError: () => void
 }
@@ -115,6 +117,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
+  const loginDemoStudent = () => {
+    const demoProfile: Profile = {
+      id: 'demo_student',
+      role: 'student',
+      display_name: 'Leo M. (Demo)',
+      registration_number: 'BLOOMI-3A-01',
+      grade_level: 3,
+      avatar_id: 'panda',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+    const demoSession: Session = {
+      access_token: 'bloomi_offline_demo_student_token',
+      token_type: 'bearer',
+      expires_in: 3600,
+      refresh_token: 'bloomi_offline_demo_refresh_token',
+      user: {
+        id: 'demo_student',
+        app_metadata: { provider: 'bloomi_offline_demo' },
+        user_metadata: { displayName: 'Leo M. (Demo)' },
+        aud: 'authenticated',
+        created_at: new Date().toISOString(),
+      } as any,
+    }
+    setSession(demoSession)
+    setProfile(demoProfile)
+  }
+
+  const loginDemoTeacher = () => {
+    const demoProfile: Profile = {
+      id: 'demo_teacher_id',
+      role: 'teacher',
+      display_name: 'Ms. Clara Vance (Demo)',
+      registration_number: null,
+      grade_level: 0,
+      avatar_id: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+    const demoSession: Session = {
+      access_token: 'bloomi_offline_demo_teacher_token',
+      token_type: 'bearer',
+      expires_in: 3600,
+      refresh_token: 'bloomi_offline_demo_refresh_token',
+      user: {
+        id: 'demo_teacher_id',
+        email: 'teacher@school.edu',
+        app_metadata: { provider: 'bloomi_offline_demo' },
+        user_metadata: { displayName: 'Ms. Clara Vance (Demo)' },
+        aud: 'authenticated',
+        created_at: new Date().toISOString(),
+      } as any,
+    }
+    setSession(demoSession)
+    setProfile(demoProfile)
+  }
+
   const logout = async () => {
     setIsLoading(true)
     setError(null)
@@ -139,6 +198,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isConfigured: isSupabaseConfigured,
     loginTeacher,
     loginStudent,
+    loginDemoStudent,
+    loginDemoTeacher,
     logout,
     clearError,
   }

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { RootLayout } from './layouts/RootLayout'
 import { HomePage } from './pages/HomePage'
@@ -21,6 +21,7 @@ export const App: React.FC = () => {
         <Route path="/" element={<RootLayout />}>
           {/* Public Routes */}
           <Route index element={<HomePage />} />
+          <Route path="login" element={<Navigate to="/login/student" replace />} />
           <Route path="login/student" element={<StudentLoginPage />} />
           <Route path="login/teacher" element={<TeacherLoginPage />} />
           <Route path="worlds/:worldId" element={<WorldDetailsPage />} />

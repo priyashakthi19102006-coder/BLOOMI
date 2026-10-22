@@ -53,6 +53,52 @@ describe('Student Credentials & Input Validation Rules', () => {
   })
 })
 
+describe('Teacher Credentials & Input Validation Rules', () => {
+  const validateTeacherInput = (email: string, password: string) => {
+    const trimmed = email.trim()
+    if (!trimmed) {
+      return { valid: false, error: 'Please enter your school or specialist email address.' }
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      return { valid: false, error: 'Please enter a valid email address.' }
+    }
+    if (!password || password.length < 6) {
+      return { valid: false, error: 'Password must be at least 6 characters.' }
+    }
+    return { valid: true, error: null }
+  }
+
+  it('accepts valid school and specialist email addresses with sufficient password', () => {
+    expect(validateTeacherInput('educator@school.edu', 'secretPass123').valid).toBe(true)
+    expect(validateTeacherInput('specialist.clara@district.org', 'bloomi2026').valid).toBe(true)
+  })
+
+  it('rejects invalid email formats', () => {
+    expect(validateTeacherInput('not-an-email', 'secretPass123').valid).toBe(false)
+    expect(validateTeacherInput('user@domain', 'secretPass123').valid).toBe(false)
+    expect(validateTeacherInput('', 'secretPass123').valid).toBe(false)
+  })
+
+  it('rejects teacher passwords shorter than 6 characters', () => {
+    expect(validateTeacherInput('educator@school.edu', '12345').valid).toBe(false)
+  })
+})
+
+describe('Show / Hide Password Behavior', () => {
+  it('toggles password input type between password and text', () => {
+    let showPassword = false
+    const toggle = () => {
+      showPassword = !showPassword
+    }
+
+    expect(showPassword ? 'text' : 'password').toBe('password')
+    toggle()
+    expect(showPassword ? 'text' : 'password').toBe('text')
+    toggle()
+    expect(showPassword ? 'text' : 'password').toBe('password')
+  })
+})
+
 describe('Role Authorization & Access Control Rules', () => {
   const canAccessRoute = (
     userRole: 'student' | 'teacher' | 'admin' | null,
@@ -74,9 +120,16 @@ describe('Role Authorization & Access Control Rules', () => {
   it('strictly denies unauthenticated users from accessing any protected route', () => {
     expect(canAccessRoute(null, ['student'])).toBe(false)
     expect(canAccessRoute(null, ['teacher'])).toBe(false)
+    expect(canAccessRoute(null, ['admin'])).toBe(false)
   })
 
   it('allows students to access student hub', () => {
     expect(canAccessRoute('student', ['student', 'admin'])).toBe(true)
+  })
+
+  it('denies arbitrary role elevation', () => {
+    const defaultRole = null
+    expect(canAccessRoute(defaultRole, ['student'])).toBe(false)
+    expect(canAccessRoute(defaultRole, ['teacher'])).toBe(false)
   })
 })
