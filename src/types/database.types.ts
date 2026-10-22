@@ -116,6 +116,59 @@ export interface Database {
           }
         ]
       }
+      student_level_progress: {
+        Row: {
+          id: string
+          student_id: string
+          world_id: 'writing' | 'speaking' | 'visual' | 'social'
+          level_number: number
+          completed: boolean
+          completed_tasks: number
+          stars_earned: number
+          completed_task_ids: Json
+          last_attempt_at: string | null
+          completed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          world_id: 'writing' | 'speaking' | 'visual' | 'social'
+          level_number: number
+          completed?: boolean
+          completed_tasks?: number
+          stars_earned?: number
+          completed_task_ids?: Json
+          last_attempt_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          world_id?: 'writing' | 'speaking' | 'visual' | 'social'
+          level_number?: number
+          completed?: boolean
+          completed_tasks?: number
+          stars_earned?: number
+          completed_task_ids?: Json
+          last_attempt_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_level_progress_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

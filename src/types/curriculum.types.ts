@@ -106,6 +106,7 @@ export interface LevelProgressRecord {
   completed: boolean
   completedTasks: number // 0 to 5
   starsEarned: number // 1 to 3
+  completedTaskIds?: string[]
   lastAttemptAt?: string
   completedAt?: string
 }

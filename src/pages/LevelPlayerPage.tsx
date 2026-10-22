@@ -1,10 +1,11 @@
-import React, { useState } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Star, RefreshCw } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { useParams, Link, useNavigate, useOutletContext } from 'react-router-dom'
+import { ArrowLeft, Star, RefreshCw, CloudCheck, HardDrive } from 'lucide-react'
 import { curriculumService } from '../data/curriculum/curriculumGenerator'
 import { progressionService } from '../services/progression.service'
 import { TaskPlayer } from '../components/TaskPlayer'
 import { useAuth } from '../contexts/AuthContext'
+import type { AccessibilityContextType } from '../layouts/RootLayout'
 import type { WorldId } from '../types/curriculum.types'
 
 export const LevelPlayerPage: React.FC = () => {
@@ -12,15 +13,51 @@ export const LevelPlayerPage: React.FC = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
 
+  // Safely consume accessibility context if available
+  const accessibility = useOutletContext<AccessibilityContextType | undefined>()
+  const highContrast = accessibility?.highContrast ?? false
+  const largeFont = accessibility?.largeFont ?? false
+  const reducedMotion = accessibility?.reducedMotion ?? false
+  const soundEnabled = accessibility?.soundEnabled ?? true
+
   const parsedWorldId = (worldId || 'writing') as WorldId
   const parsedLevelNum = parseInt(levelNumber || '1', 10)
 
   const level = curriculumService.getLevel(parsedWorldId, parsedLevelNum)
   const studentId = user?.id || 'demo_student'
+  const persistenceInfo = progressionService.getPersistenceInfo(studentId)
 
   const [currentTaskIndex, setCurrentTaskIndex] = useState<number>(0)
   const [completedTaskIds, setCompletedTaskIds] = useState<string[]>([])
   const [isLevelFinished, setIsLevelFinished] = useState<boolean>(false)
+
+  // Restore previously completed tasks if child navigated away and returned
+  useEffect(() => {
+    if (!level) return
+
+    const record = progressionService.getLevelRecord(parsedWorldId, parsedLevelNum, studentId)
+    if (record && record.completedTaskIds && record.completedTaskIds.length > 0) {
+      setCompletedTaskIds(record.completedTaskIds)
+
+      // If all 5 were already completed, student is replaying or reviewing
+      if (record.completedTaskIds.length >= 5) {
+        setIsLevelFinished(false)
+        setCurrentTaskIndex(0)
+      } else {
+        // Resume at first incomplete task
+        const nextIncompleteIdx = level.tasks.findIndex(
+          (t) => !record.completedTaskIds?.includes(t.id)
+        )
+        if (nextIncompleteIdx !== -1) {
+          setCurrentTaskIndex(nextIncompleteIdx)
+        }
+      }
+    } else {
+      setCompletedTaskIds([])
+      setCurrentTaskIndex(0)
+      setIsLevelFinished(false)
+    }
+  }, [parsedWorldId, parsedLevelNum, studentId, level])
 
   if (!level) {
     return (
@@ -29,7 +66,7 @@ export const LevelPlayerPage: React.FC = () => {
         <p className="text-sm text-[#3D6355]">This adventure level is not available yet.</p>
         <Link
           to={`/student/map?world=${parsedWorldId}`}
-          className="min-h-[44px] inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-[#24483D] text-[#FFFDF7] font-bold text-sm"
+          className="min-h-[48px] inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-[#24483D] text-[#FFFDF7] font-bold text-sm"
         >
           Return to Adventure Map
         </Link>
@@ -40,8 +77,15 @@ export const LevelPlayerPage: React.FC = () => {
   const currentTask = level.tasks[currentTaskIndex]
 
   const handleTaskCompleted = (taskId: string) => {
-    const updated = [...completedTaskIds, taskId]
-    setCompletedTaskIds(updated)
+    // Persist individual task completion with duplicate submission protection
+    const recordResult = progressionService.recordTaskCompletion(
+      parsedWorldId,
+      parsedLevelNum,
+      taskId,
+      studentId
+    )
+
+    setCompletedTaskIds(recordResult.completedTaskIds)
 
     if (currentTaskIndex + 1 < level.tasks.length) {
       setCurrentTaskIndex((prev) => prev + 1)
@@ -61,9 +105,6 @@ export const LevelPlayerPage: React.FC = () => {
   const handleNextLevel = () => {
     if (parsedLevelNum < 50) {
       navigate(`/student/play/${parsedWorldId}/${parsedLevelNum + 1}`)
-      setCurrentTaskIndex(0)
-      setCompletedTaskIds([])
-      setIsLevelFinished(false)
     } else {
       navigate(`/student/map?world=${parsedWorldId}`)
     }
@@ -71,79 +112,136 @@ export const LevelPlayerPage: React.FC = () => {
 
   return (
     <div className="max-w-3xl mx-auto py-4 sm:py-8 space-y-6">
-      {/* Top Navigation */}
-      <div className="flex items-center justify-between gap-4">
+      {/* Top Navigation & Status Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <Link
           to={`/student/map?world=${parsedWorldId}`}
-          className="min-h-[44px] inline-flex items-center gap-2 text-sm font-extrabold text-[#24483D] hover:text-[#16563F] bg-white border border-[rgba(36,72,61,0.15)] px-4 py-2 rounded-2xl shadow-xs transition-colors focus:outline-none focus:ring-3 focus:ring-[#24483D]"
+          className="min-h-[46px] inline-flex items-center gap-2 text-sm font-extrabold text-[#24483D] hover:text-[#16563F] bg-white border border-[rgba(36,72,61,0.15)] px-4 py-2 rounded-2xl shadow-xs transition-colors focus:outline-none focus:ring-3 focus:ring-[#24483D]"
         >
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           <span>Exit to Map</span>
         </Link>
 
-        {/* Task Step Dots */}
-        <div className="flex items-center gap-2">
-          {level.tasks.map((t, idx) => (
-            <div
-              key={t.id}
-              className={`w-7 h-7 rounded-full text-xs font-extrabold flex items-center justify-center transition-all ${
-                idx < currentTaskIndex || completedTaskIds.includes(t.id)
-                  ? 'bg-[#CDEFE0] text-[#16563F] font-bold'
-                  : idx === currentTaskIndex
-                  ? 'bg-[#24483D] text-[#FFFDF7] ring-2 ring-[#CDEFE0]'
-                  : 'bg-white border border-[rgba(36,72,61,0.2)] text-[#3D6355]'
-              }`}
-              title={`Task ${idx + 1} of 5`}
-            >
-              {idx < currentTaskIndex || completedTaskIds.includes(t.id) ? '✓' : idx + 1}
-            </div>
-          ))}
+        {/* Persistence Indicator */}
+        <div className="flex items-center gap-3">
+          <div
+            title={persistenceInfo.description}
+            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+              persistenceInfo.isCloudSynced
+                ? 'bg-[#CDEFE0] text-[#16563F] border border-[#B2E6CE]'
+                : 'bg-[#FFFBE6] text-[#664B00] border border-[#FCE58D]'
+            }`}
+          >
+            {persistenceInfo.isCloudSynced ? (
+              <CloudCheck className="w-3.5 h-3.5" aria-hidden="true" />
+            ) : (
+              <HardDrive className="w-3.5 h-3.5" aria-hidden="true" />
+            )}
+            <span>{persistenceInfo.statusLabel}</span>
+          </div>
+
+          {/* Task Step Dots */}
+          <div className="flex items-center gap-1.5" role="navigation" aria-label="Task progress">
+            {level.tasks.map((t, idx) => {
+              const isTaskDone = completedTaskIds.includes(t.id)
+              const isCurrent = idx === currentTaskIndex && !isLevelFinished
+              return (
+                <div
+                  key={t.id}
+                  className={`w-7 h-7 rounded-full text-xs font-extrabold flex items-center justify-center transition-all ${
+                    isTaskDone
+                      ? 'bg-[#CDEFE0] text-[#16563F] font-bold shadow-xs'
+                      : isCurrent
+                      ? 'bg-[#24483D] text-[#FFFDF7] ring-2 ring-[#CDEFE0]'
+                      : 'bg-white border border-[rgba(36,72,61,0.2)] text-[#3D6355]'
+                  }`}
+                  aria-label={`Task ${idx + 1}: ${isTaskDone ? 'Completed' : isCurrent ? 'Current' : 'Upcoming'}`}
+                >
+                  {isTaskDone ? '✓' : idx + 1}
+                </div>
+              )
+            })}
+          </div>
         </div>
       </div>
 
       {/* Level Header Banner */}
-      <div className="p-5 sm:p-7 rounded-3xl bg-white border-2 border-[rgba(36,72,61,0.12)] shadow-xs space-y-2">
+      <div
+        className={`p-5 sm:p-7 rounded-3xl border-2 shadow-xs space-y-2 ${
+          highContrast
+            ? 'bg-[#0C1210] border-[#FFF0B3] text-[#FFFDF7]'
+            : 'bg-white border-[rgba(36,72,61,0.12)] text-[#24483D]'
+        }`}
+      >
         <div className="flex items-center gap-2">
-          <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#E8DEFF] text-[#4A248A] font-extrabold uppercase tracking-wide">
+          <span
+            className={`text-xs px-3 py-0.5 rounded-full font-extrabold uppercase tracking-wide ${
+              highContrast
+                ? 'bg-[#FFF0B3] text-[#0C1210]'
+                : 'bg-[#E8DEFF] text-[#4A248A]'
+            }`}
+          >
             Level {level.levelNumber} &bull; {level.bandTitle}
           </span>
-          <span className="text-xs text-[#3D6355] font-semibold">
+          <span className="text-xs text-[#3D6355] font-semibold dark:text-[#D3E5DC]">
             Task {currentTaskIndex + 1} of 5
           </span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold font-fredoka text-[#24483D]">
+        <h1
+          className={`font-extrabold font-fredoka ${
+            largeFont ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'
+          }`}
+        >
           {level.title}
         </h1>
-        <p className="text-xs sm:text-sm text-[#3D6355] font-medium">{level.objective}</p>
+        <p className={`font-medium ${largeFont ? 'text-base sm:text-lg' : 'text-xs sm:text-sm'} opacity-90`}>
+          {level.objective}
+        </p>
       </div>
 
       {/* Interactive Task Player or Celebratory Level Completion Card */}
-      {!isLevelFinished ? (
-        <div className="p-6 sm:p-8 rounded-3xl bg-white border-2 border-[rgba(36,72,61,0.12)] shadow-xs">
+      {!isLevelFinished && currentTask ? (
+        <div
+          className={`p-6 sm:p-8 rounded-3xl border-2 shadow-xs ${
+            highContrast
+              ? 'bg-[#0C1210] border-[#3D6355]'
+              : 'bg-white border-[rgba(36,72,61,0.12)]'
+          }`}
+        >
           <TaskPlayer
             key={currentTask.id}
             task={currentTask}
             onTaskCompleted={handleTaskCompleted}
+            soundEnabled={soundEnabled}
+            highContrast={highContrast}
+            largeFont={largeFont}
+            reducedMotion={reducedMotion}
           />
         </div>
       ) : (
         /* Celebratory Completion Screen */
-        <div className="p-8 sm:p-12 rounded-3xl bg-white border-2 border-[#B2E6CE] text-center space-y-6 shadow-sm">
+        <div
+          className={`p-8 sm:p-12 rounded-3xl border-2 text-center space-y-6 shadow-sm ${
+            highContrast
+              ? 'bg-[#0C1210] border-[#FFF0B3] text-[#FFFDF7]'
+              : 'bg-white border-[#B2E6CE] text-[#24483D]'
+          }`}
+        >
           <div className="w-20 h-20 mx-auto rounded-3xl bg-[#CDEFE0] text-[#16563F] flex items-center justify-center text-4xl shadow-xs">
             🌸
           </div>
 
           <div className="space-y-2">
-            <div className="flex justify-center gap-1 text-[#8A6400]">
+            <div className="flex justify-center gap-1.5 text-[#8A6400]">
               <Star className="w-8 h-8 fill-[#FFF0B3]" />
               <Star className="w-8 h-8 fill-[#FFF0B3]" />
               <Star className="w-8 h-8 fill-[#FFF0B3]" />
             </div>
 
-            <h2 className="text-2xl sm:text-3xl font-extrabold font-fredoka text-[#24483D]">
+            <h2 className="text-2xl sm:text-3xl font-extrabold font-fredoka">
               Level {level.levelNumber} Complete!
             </h2>
-            <p className="text-sm sm:text-base text-[#3D6355] font-medium max-w-md mx-auto">
+            <p className="text-sm sm:text-base font-medium max-w-md mx-auto opacity-90">
               Outstanding work! You finished all 5 tasks and helped your learning garden grow.
             </p>
           </div>
@@ -166,7 +264,7 @@ export const LevelPlayerPage: React.FC = () => {
             <button
               type="button"
               onClick={handleReplay}
-              className="min-h-[48px] px-6 py-3.5 rounded-2xl font-bold text-sm bg-white text-[#24483D] border-2 border-[rgba(36,72,61,0.2)] hover:bg-[#F2FAF6] transition-colors"
+              className="min-h-[48px] px-6 py-3.5 rounded-2xl font-bold text-sm bg-white text-[#24483D] border-2 border-[rgba(36,72,61,0.2)] hover:bg-[#F2FAF6] transition-colors focus:outline-none focus:ring-3 focus:ring-[#24483D]"
             >
               <RefreshCw className="w-4 h-4 inline-block mr-1.5" />
               <span>Replay Level</span>
@@ -174,7 +272,7 @@ export const LevelPlayerPage: React.FC = () => {
 
             <Link
               to={`/student/map?world=${parsedWorldId}`}
-              className="min-h-[48px] inline-flex items-center px-6 py-3.5 rounded-2xl font-bold text-sm bg-[#FFFDF7] text-[#3D6355] border border-[rgba(36,72,61,0.15)] hover:bg-[#F2FAF6] transition-colors"
+              className="min-h-[48px] inline-flex items-center px-6 py-3.5 rounded-2xl font-bold text-sm bg-[#FFFDF7] text-[#3D6355] border border-[rgba(36,72,61,0.15)] hover:bg-[#F2FAF6] transition-colors focus:outline-none focus:ring-3 focus:ring-[#24483D]"
             >
               Back to Map
             </Link>

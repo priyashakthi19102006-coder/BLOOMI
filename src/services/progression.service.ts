@@ -6,6 +6,7 @@ import type {
   LevelProgressRecord,
 } from '../types/curriculum.types'
 import { curriculumWorlds } from '../data/curriculum/curriculumGenerator'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 const DEMO_STORAGE_KEY_PREFIX = 'bloomi_curriculum_progress_'
 
@@ -63,6 +64,7 @@ export function createInitialProgress(userId: string = 'demo_student', isDemo: b
           completed: false,
           completedTasks: 0,
           starsEarned: 0,
+          completedTaskIds: [],
         },
       },
     }
@@ -73,6 +75,14 @@ export function createInitialProgress(userId: string = 'demo_student', isDemo: b
     isDemo,
     worlds,
   }
+}
+
+export interface PersistenceInfo {
+  isCloudSynced: boolean
+  isDemo: boolean
+  storageType: 'supabase' | 'localStorage' | 'memory'
+  statusLabel: string
+  description: string
 }
 
 export const progressionService = {
@@ -96,9 +106,13 @@ export const progressionService = {
       const worldIds: WorldId[] = ['writing', 'speaking', 'visual', 'social']
       let needsResave = false
 
+      if (!parsed.worlds) {
+        parsed.worlds = {} as any
+        needsResave = true
+      }
+
       worldIds.forEach((wId) => {
-        if (!parsed.worlds || !parsed.worlds[wId]) {
-          if (!parsed.worlds) parsed.worlds = {} as any
+        if (!parsed.worlds[wId]) {
           parsed.worlds[wId] = {
             completedLevelNumbers: [],
             currentLevelNumber: 1,
@@ -109,9 +123,13 @@ export const progressionService = {
                 completed: false,
                 completedTasks: 0,
                 starsEarned: 0,
+                completedTaskIds: [],
               },
             },
           }
+          needsResave = true
+        } else if (!parsed.worlds[wId].levelRecords) {
+          parsed.worlds[wId].levelRecords = {}
           needsResave = true
         }
       })
@@ -136,8 +154,126 @@ export const progressionService = {
     try {
       const storageKey = `${DEMO_STORAGE_KEY_PREFIX}${progress.userId}`
       setStorageItem(storageKey, JSON.stringify(progress))
+
+      // If Supabase is active and authenticated, trigger an asynchronous cloud sync
+      if (isSupabaseConfigured && supabase && progress.userId && progress.userId !== 'demo_student') {
+        this.syncToCloud(progress).catch((err) => {
+          console.warn('Background Supabase progress sync note:', err?.message || err)
+        })
+      }
     } catch (e) {
       console.error('Failed to persist student curriculum progress:', e)
+    }
+  },
+
+  /**
+   * Asynchronously sync progress record to Supabase if configured.
+   */
+  async syncToCloud(progress: StudentCurriculumProgress): Promise<void> {
+    if (!isSupabaseConfigured || !supabase || progress.userId === 'demo_student') {
+      return
+    }
+
+    try {
+      // Upsert records for completed levels or active attempts
+      for (const worldId of Object.keys(progress.worlds) as WorldId[]) {
+        const worldData = progress.worlds[worldId]
+        for (const lvlStr of Object.keys(worldData.levelRecords)) {
+          const lvlNum = parseInt(lvlStr, 10)
+          const record = worldData.levelRecords[lvlNum]
+          if (record) {
+            await (supabase.from('student_level_progress') as any).upsert(
+              {
+                student_id: progress.userId,
+                world_id: worldId,
+                level_number: lvlNum,
+                completed: record.completed,
+                completed_tasks: record.completedTasks,
+                stars_earned: record.starsEarned,
+                completed_task_ids: record.completedTaskIds || [],
+                completed_at: record.completedAt || null,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: 'student_id,world_id,level_number' }
+            )
+          }
+        }
+      }
+    } catch (err) {
+      // Cloud sync failure does not crash the app or erase local progress
+      console.warn('Supabase sync skipped or failed:', err)
+    }
+  },
+
+  /**
+   * Get specific progress record for a single level, including completed task IDs.
+   */
+  getLevelRecord(
+    worldId: WorldId,
+    levelNumber: number,
+    userId: string = 'demo_student'
+  ): LevelProgressRecord | null {
+    const progress = this.getProgress(userId)
+    const worldProg = progress.worlds[worldId]
+    if (!worldProg || !worldProg.levelRecords) {
+      return null
+    }
+    return worldProg.levelRecords[levelNumber] || null
+  },
+
+  /**
+   * Record completion of an individual task inside a level.
+   * Guarantees duplicate submission protection and persists completed task IDs.
+   * Does NOT mark the entire level complete until all 5 tasks are verified.
+   */
+  recordTaskCompletion(
+    worldId: WorldId,
+    levelNumber: number,
+    taskId: string,
+    userId: string = 'demo_student'
+  ): {
+    success: boolean
+    completedTasksCount: number
+    completedTaskIds: string[]
+    isLevelComplete: boolean
+  } {
+    const progress = this.getProgress(userId)
+    const worldProg = progress.worlds[worldId]
+
+    if (!worldProg.levelRecords[levelNumber]) {
+      worldProg.levelRecords[levelNumber] = {
+        levelNumber,
+        worldId,
+        completed: false,
+        completedTasks: 0,
+        starsEarned: 0,
+        completedTaskIds: [],
+        lastAttemptAt: new Date().toISOString(),
+      }
+    }
+
+    const record = worldProg.levelRecords[levelNumber]
+    if (!record.completedTaskIds) {
+      record.completedTaskIds = []
+    }
+
+    // Protection against duplicate submissions
+    if (!record.completedTaskIds.includes(taskId)) {
+      record.completedTaskIds.push(taskId)
+    }
+
+    record.completedTasks = record.completedTaskIds.length
+    record.lastAttemptAt = new Date().toISOString()
+
+    const isLevelComplete = record.completedTasks >= 5
+
+    this.saveProgress(progress)
+
+    return {
+      success: true,
+      completedTasksCount: record.completedTasks,
+      completedTaskIds: [...record.completedTaskIds],
+      isLevelComplete,
     }
   },
 
@@ -180,6 +316,7 @@ export const progressionService = {
   /**
    * Complete a level. Requires all 5 tasks to be completed.
    * Completing unlocks level N+1 within this world only.
+   * Replaying preserves prior completion and highest stars earned.
    */
   completeLevel(
     worldId: WorldId,
@@ -206,13 +343,20 @@ export const progressionService = {
       worldProg.completedLevelNumbers.sort((a, b) => a - b)
     }
 
+    const previousRecord = worldProg.levelRecords[levelNumber]
+    const highestStars = previousRecord?.starsEarned
+      ? Math.max(previousRecord.starsEarned, starsEarned)
+      : Math.min(3, Math.max(1, starsEarned))
+
     const record: LevelProgressRecord = {
       levelNumber,
       worldId,
       completed: true,
       completedTasks: 5,
-      starsEarned: Math.min(3, Math.max(1, starsEarned)),
-      completedAt: new Date().toISOString(),
+      starsEarned: highestStars,
+      completedTaskIds: previousRecord?.completedTaskIds || [],
+      lastAttemptAt: new Date().toISOString(),
+      completedAt: previousRecord?.completedAt || new Date().toISOString(),
     }
 
     worldProg.levelRecords[levelNumber] = record
@@ -263,5 +407,34 @@ export const progressionService = {
   resetProgress(userId: string = 'demo_student'): void {
     const storageKey = `${DEMO_STORAGE_KEY_PREFIX}${userId}`
     removeStorageItem(storageKey)
+  },
+
+  /**
+   * Explicit metadata regarding persistence mode and storage adapter.
+   */
+  getPersistenceInfo(userId: string = 'demo_student'): PersistenceInfo {
+    const hasSupabase = isSupabaseConfigured && Boolean(supabase) && userId !== 'demo_student'
+
+    if (hasSupabase) {
+      return {
+        isCloudSynced: true,
+        isDemo: false,
+        storageType: 'supabase',
+        statusLabel: 'Cloud Sync Active',
+        description: 'Progress is securely saved to your student cloud profile via Supabase.',
+      }
+    }
+
+    const hasLocalStorage = typeof localStorage !== 'undefined'
+
+    return {
+      isCloudSynced: false,
+      isDemo: true,
+      storageType: hasLocalStorage ? 'localStorage' : 'memory',
+      statusLabel: 'Local Demo Storage',
+      description: hasLocalStorage
+        ? 'Demo mode active: Progress is saved to this browser and will persist across refreshes on this device.'
+        : 'Demo mode active: In-memory session store.',
+    }
   },
 }

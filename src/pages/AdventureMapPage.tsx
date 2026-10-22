@@ -29,6 +29,7 @@ export const AdventureMapPage: React.FC = () => {
   const studentId = user?.id || 'demo_student'
   const progress = progressionService.getProgress(studentId)
   const worldSummary = progressionService.getWorldSummary(activeWorldId, progress)
+  const persistenceInfo = progressionService.getPersistenceInfo(studentId)
 
   const handleSelectWorld = (wId: WorldId) => {
     setSearchParams({ world: wId })
@@ -91,12 +92,17 @@ export const AdventureMapPage: React.FC = () => {
           <span>Back to Student Hub</span>
         </Link>
 
-        {/* Demo Mode or Sync Indicator */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#FFFBE6] border border-[#FCE58D] text-xs font-bold text-[#664B00]">
-          <Info className="w-4 h-4 text-[#8A6400] shrink-0" aria-hidden="true" />
-          <span>
-            {progress.isDemo ? 'Demo Mode (Session Progress Active)' : 'Cloud Progress Synced'}
-          </span>
+        {/* Persistence Indicator */}
+        <div
+          title={persistenceInfo.description}
+          className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-bold ${
+            persistenceInfo.isCloudSynced
+              ? 'bg-[#CDEFE0] border-[#B2E6CE] text-[#16563F]'
+              : 'bg-[#FFFBE6] border-[#FCE58D] text-[#664B00]'
+          }`}
+        >
+          <Info className="w-4 h-4 shrink-0" aria-hidden="true" />
+          <span>{persistenceInfo.statusLabel}</span>
         </div>
       </div>
 
