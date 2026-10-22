@@ -169,6 +169,60 @@ export interface Database {
           }
         ]
       }
+      teacher_observations: {
+        Row: {
+          id: string
+          teacher_id: string
+          student_id: string
+          observation_date: string
+          activity_context: string
+          observed_content: string
+          strategy_tried: string | null
+          follow_up_notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          teacher_id: string
+          student_id: string
+          observation_date?: string
+          activity_context: string
+          observed_content: string
+          strategy_tried?: string | null
+          follow_up_notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          teacher_id?: string
+          student_id?: string
+          observation_date?: string
+          activity_context?: string
+          observed_content?: string
+          strategy_tried?: string | null
+          follow_up_notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_observations_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_observations_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

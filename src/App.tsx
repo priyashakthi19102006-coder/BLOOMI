@@ -7,6 +7,7 @@ import { StudentLoginPage } from './pages/StudentLoginPage'
 import { TeacherLoginPage } from './pages/TeacherLoginPage'
 import { WorldDetailsPage } from './pages/WorldDetailsPage'
 import { TeacherDashboardPage } from './pages/TeacherDashboardPage'
+import { StudentReportPage } from './pages/StudentReportPage'
 import { StudentHubPage } from './pages/StudentHubPage'
 import { AdventureMapPage } from './pages/AdventureMapPage'
 import { LevelPlayerPage } from './pages/LevelPlayerPage'
@@ -30,6 +31,14 @@ export const App: React.FC = () => {
             element={
               <ProtectedRoute allowedRoles={['teacher', 'admin']}>
                 <TeacherDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="teacher/students/:studentId"
+            element={
+              <ProtectedRoute allowedRoles={['teacher', 'admin']}>
+                <StudentReportPage />
               </ProtectedRoute>
             }
           />
