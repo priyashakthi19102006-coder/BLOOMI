@@ -8,6 +8,8 @@ import { TeacherLoginPage } from './pages/TeacherLoginPage'
 import { WorldDetailsPage } from './pages/WorldDetailsPage'
 import { TeacherDashboardPage } from './pages/TeacherDashboardPage'
 import { StudentHubPage } from './pages/StudentHubPage'
+import { AdventureMapPage } from './pages/AdventureMapPage'
+import { LevelPlayerPage } from './pages/LevelPlayerPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { ProtectedRoute } from './components/ProtectedRoute'
 
@@ -38,6 +40,22 @@ export const App: React.FC = () => {
             element={
               <ProtectedRoute allowedRoles={['student', 'admin']}>
                 <StudentHubPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="student/map"
+            element={
+              <ProtectedRoute allowedRoles={['student', 'admin']}>
+                <AdventureMapPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="student/play/:worldId/:levelNumber"
+            element={
+              <ProtectedRoute allowedRoles={['student', 'admin']}>
+                <LevelPlayerPage />
               </ProtectedRoute>
             }
           />
