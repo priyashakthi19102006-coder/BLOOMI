@@ -24,28 +24,28 @@ export const StudentHubPage: React.FC = () => {
   return (
     <div className="max-w-5xl mx-auto py-4 sm:py-8 space-y-8">
       {/* Student Greeting Banner */}
-      <div className="bg-gradient-to-r from-amber-400 via-orange-400 to-pink-500 rounded-3xl p-6 sm:p-10 text-amber-950 shadow-lg relative overflow-hidden">
+      <div className="bg-[#FFFFFF] border-2 border-[#F8D2B8] rounded-3xl p-6 sm:p-10 text-[#24483D] shadow-xs relative overflow-hidden">
         <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="w-20 h-20 rounded-3xl bg-white/90 shadow-md flex items-center justify-center text-4xl border-2 border-white">
+            <div className="w-20 h-20 rounded-3xl bg-[#FFF5EE] shadow-xs flex items-center justify-center text-4xl border-2 border-[#F8D2B8]">
               {avatarEmoji}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/60 font-bold uppercase tracking-wider text-amber-900">
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#FFE0CC] text-[#7A3300] font-bold uppercase tracking-wider">
                   Grade 3 Explorer
                 </span>
                 {profile?.registration_number && (
-                  <span className="text-xs font-mono font-bold bg-amber-900/10 px-2 py-0.5 rounded text-amber-950">
+                  <span className="text-xs font-mono font-bold bg-[#F2FAF6] border border-[#B2E6CE] px-2 py-0.5 rounded text-[#16563F]">
                     {profile.registration_number}
                   </span>
                 )}
               </div>
-              <h1 className="text-2xl sm:text-4xl font-extrabold font-fredoka mt-1">
+              <h1 className="text-2xl sm:text-4xl font-extrabold font-fredoka text-[#24483D] mt-1">
                 Welcome back, {profile?.display_name || 'Explorer'}!
               </h1>
-              <p className="text-xs sm:text-sm font-semibold text-amber-900/80">
-                Pick a world below to continue your learning adventure!
+              <p className="text-xs sm:text-sm font-semibold text-[#3D6355]">
+                Pick a learning world below to continue your journey!
               </p>
             </div>
           </div>
@@ -53,9 +53,9 @@ export const StudentHubPage: React.FC = () => {
           <button
             type="button"
             onClick={handleSignOut}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/80 hover:bg-white text-amber-950 text-xs sm:text-sm font-bold shadow-xs transition-all focus:outline-none focus:ring-2 focus:ring-amber-300"
+            className="min-h-[44px] flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FFFDF7] hover:bg-[#F2FAF6] border border-[rgba(36,72,61,0.2)] text-[#24483D] text-xs sm:text-sm font-bold shadow-xs transition-all focus:outline-none focus:ring-3 focus:ring-[#24483D]"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-4 h-4" aria-hidden="true" />
             <span>Finish Adventure &bull; Sign Out</span>
           </button>
         </div>
@@ -63,82 +63,82 @@ export const StudentHubPage: React.FC = () => {
 
       {/* World Selection Grid */}
       <div className="space-y-4">
-        <h2 className="text-xl sm:text-2xl font-bold font-fredoka text-slate-900 flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-amber-500" />
-          <span>Your Learning Worlds</span>
+        <h2 className="text-xl sm:text-2xl font-extrabold font-fredoka text-[#24483D] flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-[#8A6400]" aria-hidden="true" />
+          <span>Your Four Learning Worlds</span>
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Link
             to="/worlds/writing"
-            className="group p-5 rounded-2xl bg-white border-2 border-amber-200 hover:border-amber-400 shadow-xs hover:shadow-md transition-all flex items-center justify-between"
+            className="group min-h-[96px] p-5 rounded-2xl bg-white border-2 border-[#F8D2B8] hover:border-[#24483D] shadow-xs hover:shadow-md transition-all flex items-center justify-between focus:outline-none focus:ring-3 focus:ring-[#24483D]"
           >
             <div className="flex items-center gap-3.5">
-              <div className="p-3 rounded-xl bg-amber-100 text-amber-800">
-                <BookOpen className="w-6 h-6" />
+              <div className="p-3 rounded-xl bg-[#FFF5EE] text-[#7A3300] border border-[#F8D2B8]">
+                <BookOpen className="w-6 h-6" aria-hidden="true" />
               </div>
               <div>
-                <h3 className="font-extrabold text-base text-slate-800 group-hover:text-amber-600 transition-colors">
+                <h3 className="font-extrabold text-base text-[#24483D] group-hover:underline">
                   Writing World
                 </h3>
-                <p className="text-xs text-slate-500">Letter tracing &amp; word garden</p>
+                <p className="text-xs text-[#3D6355] font-medium">Letter tracing, spelling &amp; word garden</p>
               </div>
             </div>
-            <ArrowRight className="w-5 h-5 text-amber-500 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="w-5 h-5 text-[#7A3300] group-hover:translate-x-1 transition-transform" aria-hidden="true" />
           </Link>
 
           <Link
             to="/worlds/speaking"
-            className="group p-5 rounded-2xl bg-white border-2 border-sky-200 hover:border-sky-400 shadow-xs hover:shadow-md transition-all flex items-center justify-between"
+            className="group min-h-[96px] p-5 rounded-2xl bg-white border-2 border-[#D5C2FE] hover:border-[#24483D] shadow-xs hover:shadow-md transition-all flex items-center justify-between focus:outline-none focus:ring-3 focus:ring-[#24483D]"
           >
             <div className="flex items-center gap-3.5">
-              <div className="p-3 rounded-xl bg-sky-100 text-sky-800">
-                <Mic className="w-6 h-6" />
+              <div className="p-3 rounded-xl bg-[#F7F4FF] text-[#4A248A] border border-[#D5C2FE]">
+                <Mic className="w-6 h-6" aria-hidden="true" />
               </div>
               <div>
-                <h3 className="font-extrabold text-base text-slate-800 group-hover:text-sky-600 transition-colors">
+                <h3 className="font-extrabold text-base text-[#24483D] group-hover:underline">
                   Speaking World
                 </h3>
-                <p className="text-xs text-slate-500">Voice balloons &amp; echo rhymes</p>
+                <p className="text-xs text-[#3D6355] font-medium">Listening games, sound clues &amp; echo rhymes</p>
               </div>
             </div>
-            <ArrowRight className="w-5 h-5 text-sky-500 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="w-5 h-5 text-[#4A248A] group-hover:translate-x-1 transition-transform" aria-hidden="true" />
           </Link>
 
           <Link
             to="/worlds/visual"
-            className="group p-5 rounded-2xl bg-white border-2 border-emerald-200 hover:border-emerald-400 shadow-xs hover:shadow-md transition-all flex items-center justify-between"
+            className="group min-h-[96px] p-5 rounded-2xl bg-white border-2 border-[#B2E6CE] hover:border-[#24483D] shadow-xs hover:shadow-md transition-all flex items-center justify-between focus:outline-none focus:ring-3 focus:ring-[#24483D]"
           >
             <div className="flex items-center gap-3.5">
-              <div className="p-3 rounded-xl bg-emerald-100 text-emerald-800">
-                <Eye className="w-6 h-6" />
+              <div className="p-3 rounded-xl bg-[#F0FAF5] text-[#16563F] border border-[#B2E6CE]">
+                <Eye className="w-6 h-6" aria-hidden="true" />
               </div>
               <div>
-                <h3 className="font-extrabold text-base text-slate-800 group-hover:text-emerald-600 transition-colors">
+                <h3 className="font-extrabold text-base text-[#24483D] group-hover:underline">
                   Visual Discovery
                 </h3>
-                <p className="text-xs text-slate-500">Prism puzzles &amp; symbol matching</p>
+                <p className="text-xs text-[#3D6355] font-medium">Matching, sequences &amp; prism puzzles</p>
               </div>
             </div>
-            <ArrowRight className="w-5 h-5 text-emerald-500 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="w-5 h-5 text-[#16563F] group-hover:translate-x-1 transition-transform" aria-hidden="true" />
           </Link>
 
           <Link
             to="/worlds/social"
-            className="group p-5 rounded-2xl bg-white border-2 border-purple-200 hover:border-purple-400 shadow-xs hover:shadow-md transition-all flex items-center justify-between"
+            className="group min-h-[96px] p-5 rounded-2xl bg-white border-2 border-[#FCE58D] hover:border-[#24483D] shadow-xs hover:shadow-md transition-all flex items-center justify-between focus:outline-none focus:ring-3 focus:ring-[#24483D]"
           >
             <div className="flex items-center gap-3.5">
-              <div className="p-3 rounded-xl bg-purple-100 text-purple-800">
-                <HeartHandshake className="w-6 h-6" />
+              <div className="p-3 rounded-xl bg-[#FFFBE6] text-[#664B00] border border-[#FCE58D]">
+                <HeartHandshake className="w-6 h-6" aria-hidden="true" />
               </div>
               <div>
-                <h3 className="font-extrabold text-base text-slate-800 group-hover:text-purple-600 transition-colors">
+                <h3 className="font-extrabold text-base text-[#24483D] group-hover:underline">
                   Social Adventure
                 </h3>
-                <p className="text-xs text-slate-500">Feelings detective &amp; sharing</p>
+                <p className="text-xs text-[#3D6355] font-medium">Feelings detective &amp; everyday cooperation</p>
               </div>
             </div>
-            <ArrowRight className="w-5 h-5 text-purple-500 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="w-5 h-5 text-[#664B00] group-hover:translate-x-1 transition-transform" aria-hidden="true" />
           </Link>
         </div>
       </div>

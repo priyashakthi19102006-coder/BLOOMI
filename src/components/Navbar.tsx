@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Sparkles, GraduationCap, User, Menu, X, Sun, Moon, LogOut } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { BloomiMascot } from './BloomiMascot'
 
 interface NavbarProps {
   highContrast: boolean
@@ -30,97 +31,111 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header
       className={`sticky top-0 z-50 transition-colors backdrop-blur-md border-b ${
         highContrast
-          ? 'bg-black text-yellow-300 border-yellow-400'
-          : 'bg-white/90 text-slate-800 border-purple-100 shadow-xs'
+          ? 'bg-[#0C1210]/95 text-[#FFFDF7] border-[#FFF0B3]'
+          : 'bg-[#FFFDF7]/95 text-[#24483D] border-[rgba(36,72,61,0.12)] shadow-xs'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
-          {/* Logo & Brand */}
+          {/* Logo & Wordmark */}
           <Link
             to="/"
-            className="flex items-center gap-3 group focus:outline-none focus:ring-4 focus:ring-purple-400 rounded-xl p-1"
-            aria-label="BLOOMI Home - Inclusive Learning Adventure"
+            className="flex items-center gap-3.5 group focus:outline-none focus:ring-3 focus:ring-[#24483D] rounded-2xl p-1"
+            aria-label="BLOOMI - Home & Learning Worlds"
           >
-            <div className="relative w-12 h-12 flex items-center justify-center rounded-2xl bg-gradient-to-tr from-purple-500 to-pink-500 shadow-md group-hover:scale-105 transition-transform">
-              <span className="text-2xl" role="img" aria-label="Bloomi Flower">🌸</span>
-              <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-pink-500"></span>
-              </span>
+            <div className="shrink-0 transition-transform group-hover:scale-105">
+              <BloomiMascot size={46} />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-2xl sm:text-3xl font-extrabold tracking-tight font-fredoka bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 bg-clip-text text-transparent">
+                <span
+                  className={`text-2xl sm:text-3xl font-extrabold tracking-tight font-fredoka ${
+                    highContrast ? 'text-[#FFF0B3]' : 'text-[#24483D]'
+                  }`}
+                >
                   BLOOMI
                 </span>
-                <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-purple-100 text-purple-700 hidden sm:inline-block">
+                <span
+                  className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider hidden sm:inline-block ${
+                    highContrast
+                      ? 'bg-[#FFF0B3] text-[#24483D]'
+                      : 'bg-[#CDEFE0] text-[#16563F]'
+                  }`}
+                >
                   Grade 3
                 </span>
               </div>
-              <p className="text-xs text-slate-500 hidden sm:block font-medium">
-                Inclusive Learning Adventure
+              <p
+                className={`text-xs font-medium hidden sm:block ${
+                  highContrast ? 'text-[#D3E5DC]' : 'text-[#3D6355]'
+                }`}
+              >
+                Every child blooms in their own way
               </p>
             </div>
           </Link>
 
-          {/* Accessibility Quick Controls & Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-3">
-            {/* Accessibility helpers */}
-            <div className="flex items-center bg-slate-100/80 rounded-xl p-1 border border-slate-200">
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-4">
+            {/* Quick Contrast / Text Sizing helpers */}
+            <div className="flex items-center rounded-xl p-1 border border-[rgba(36,72,61,0.15)] bg-white/70">
               <button
                 type="button"
                 onClick={toggleHighContrast}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-white transition-all text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="min-h-[40px] flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-[#24483D] hover:bg-[#F2FAF6] focus:outline-none focus:ring-2 focus:ring-[#24483D]"
                 aria-pressed={highContrast}
-                title="Toggle High Contrast for Visual Support"
+                title="Toggle High Contrast"
               >
-                {highContrast ? <Sun className="w-4 h-4 text-yellow-500" /> : <Moon className="w-4 h-4 text-purple-600" />}
-                <span>{highContrast ? 'Standard' : 'High Contrast'}</span>
+                {highContrast ? (
+                  <Sun className="w-4 h-4 text-[#8A6400]" aria-hidden="true" />
+                ) : (
+                  <Moon className="w-4 h-4 text-[#4A248A]" aria-hidden="true" />
+                )}
+                <span>{highContrast ? 'Soft Mode' : 'High Contrast'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={toggleLargeFont}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-white transition-all text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="min-h-[40px] flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-[#24483D] hover:bg-[#F2FAF6] focus:outline-none focus:ring-2 focus:ring-[#24483D]"
                 aria-pressed={largeFont}
                 title="Toggle Text Sizing"
               >
-                <span className="font-bold text-sm">A+</span>
-                <span>{largeFont ? 'Default' : 'Larger'}</span>
+                <span className="font-extrabold text-xs">A+</span>
+                <span>{largeFont ? 'Normal' : 'Larger'}</span>
               </button>
             </div>
 
-            {/* Navigation Links */}
-            <nav className="flex items-center gap-2" aria-label="Main Navigation">
+            {/* Navigation links & entry points */}
+            <nav className="flex items-center gap-2.5" aria-label="Main Navigation">
               <Link
                 to="/"
-                className={`px-3 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                className={`min-h-[44px] flex items-center px-3.5 py-2 rounded-xl text-sm font-bold transition-colors ${
                   location.pathname === '/'
-                    ? 'text-purple-700 bg-purple-50'
-                    : 'text-slate-600 hover:text-purple-600 hover:bg-purple-50/50'
+                    ? 'text-[#24483D] bg-[#CDEFE0]'
+                    : 'text-[#3D6355] hover:text-[#24483D] hover:bg-[#F2FAF6]'
                 }`}
               >
                 Learning Worlds
               </Link>
 
               {session && profile ? (
-                /* Authenticated User Session View */
-                <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
+                /* Authenticated User View */
+                <div className="flex items-center gap-2 pl-2 border-l border-[rgba(36,72,61,0.15)]">
                   {role === 'teacher' ? (
                     <Link
                       to="/teacher/dashboard"
-                      className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-purple-100 text-purple-800 hover:bg-purple-200 transition-colors"
+                      className="min-h-[44px] flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-[#E8DEFF] text-[#4A248A] border border-[#D5C2FE] hover:brightness-95 transition-all shadow-xs"
                     >
-                      <GraduationCap className="w-4 h-4 text-purple-600" />
+                      <GraduationCap className="w-4 h-4" aria-hidden="true" />
                       <span>{profile.display_name || 'Educator Portal'}</span>
                     </Link>
                   ) : (
                     <Link
                       to="/student/hub"
-                      className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-100 text-amber-900 hover:bg-amber-200 transition-colors"
+                      className="min-h-[44px] flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-[#FFE0CC] text-[#7A3300] border border-[#F8D2B8] hover:brightness-95 transition-all shadow-xs"
                     >
-                      <Sparkles className="w-4 h-4 text-amber-600" />
+                      <Sparkles className="w-4 h-4" aria-hidden="true" />
                       <span>{profile.display_name || 'Student Hub'}</span>
                     </Link>
                   )}
@@ -128,30 +143,30 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <button
                     type="button"
                     onClick={handleSignOut}
-                    className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                    className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2.5 rounded-xl text-[#3D6355] hover:text-[#24483D] hover:bg-[#F2FAF6] transition-colors focus:outline-none focus:ring-2 focus:ring-[#24483D]"
                     title="Sign Out"
                     aria-label="Sign Out"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </div>
               ) : (
-                /* Unauthenticated View */
+                /* Unauthenticated View: Clearly Separated Entry Points */
                 <>
                   <Link
                     to="/login/student"
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-gradient-to-r from-amber-400 to-orange-400 text-amber-950 hover:brightness-105 shadow-sm transition-all transform hover:-translate-y-0.5"
+                    className="min-h-[44px] flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-extrabold bg-[#FFE0CC] hover:bg-[#FFCFB0] text-[#7A3300] border border-[#F8D2B8] shadow-xs transition-all transform hover:-translate-y-0.5 focus:outline-none focus:ring-3 focus:ring-[#7A3300]"
                   >
-                    <Sparkles className="w-4 h-4" />
+                    <Sparkles className="w-4 h-4 text-[#7A3300]" aria-hidden="true" />
                     <span>Student Hub</span>
                   </Link>
 
                   <Link
                     to="/login/teacher"
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-purple-700 border border-purple-200 hover:bg-purple-50 transition-colors"
+                    className="min-h-[44px] flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-white hover:bg-[#F7F4FF] text-[#4A248A] border border-[#D5C2FE] shadow-xs transition-colors focus:outline-none focus:ring-3 focus:ring-[#4A248A]"
                   >
-                    <GraduationCap className="w-4 h-4" />
-                    <span>Educator Portal</span>
+                    <GraduationCap className="w-4 h-4 text-[#4A248A]" aria-hidden="true" />
+                    <span>Teacher Portal</span>
                   </Link>
                 </>
               )}
@@ -163,20 +178,28 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={toggleHighContrast}
-              className="p-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200"
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-white border border-[rgba(36,72,61,0.15)] text-[#24483D]"
               aria-label="Toggle contrast"
             >
-              {highContrast ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5" />}
+              {highContrast ? (
+                <Sun className="w-5 h-5 text-[#8A6400]" aria-hidden="true" />
+              ) : (
+                <Moon className="w-5 h-5 text-[#4A248A]" aria-hidden="true" />
+              )}
             </button>
 
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-400"
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-[#CDEFE0] text-[#16563F] focus:outline-none focus:ring-3 focus:ring-[#24483D]"
               aria-label="Open navigation menu"
               aria-expanded={mobileMenuOpen}
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? (
+                <X className="w-6 h-6" aria-hidden="true" />
+              ) : (
+                <Menu className="w-6 h-6" aria-hidden="true" />
+              )}
             </button>
           </div>
         </div>
@@ -184,33 +207,33 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-purple-100 bg-white px-4 pt-3 pb-6 space-y-3">
+        <div className="md:hidden border-t border-[rgba(36,72,61,0.12)] bg-[#FFFDF7] px-4 pt-4 pb-6 space-y-3">
           <Link
             to="/"
             onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-purple-50 hover:text-purple-700"
+            className="min-h-[44px] flex items-center px-4 py-2.5 rounded-xl font-bold text-[#24483D] hover:bg-[#CDEFE0]"
           >
-            🏠 Learning Worlds
+            🌸 Explore Learning Worlds
           </Link>
 
           {session && profile ? (
-            <div className="space-y-2 pt-2 border-t border-slate-100">
+            <div className="space-y-2 pt-2 border-t border-[rgba(36,72,61,0.12)]">
               {role === 'teacher' ? (
                 <Link
                   to="/teacher/dashboard"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 px-4 py-3 rounded-xl font-bold bg-purple-100 text-purple-800"
+                  className="min-h-[44px] flex items-center gap-2 px-4 py-3 rounded-xl font-bold bg-[#E8DEFF] text-[#4A248A]"
                 >
-                  <GraduationCap className="w-5 h-5 text-purple-600" />
-                  <span>Educator Dashboard ({profile.display_name})</span>
+                  <GraduationCap className="w-5 h-5" aria-hidden="true" />
+                  <span>Educator Portal ({profile.display_name})</span>
                 </Link>
               ) : (
                 <Link
                   to="/student/hub"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 px-4 py-3 rounded-xl font-bold bg-amber-100 text-amber-900"
+                  className="min-h-[44px] flex items-center gap-2 px-4 py-3 rounded-xl font-bold bg-[#FFE0CC] text-[#7A3300]"
                 >
-                  <Sparkles className="w-5 h-5 text-amber-600" />
+                  <Sparkles className="w-5 h-5" aria-hidden="true" />
                   <span>Student Hub ({profile.display_name})</span>
                 </Link>
               )}
@@ -221,40 +244,42 @@ export const Navbar: React.FC<NavbarProps> = ({
                   setMobileMenuOpen(false)
                   handleSignOut()
                 }}
-                className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-rose-600 border border-rose-200 rounded-xl"
+                className="w-full min-h-[44px] flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-4 h-4" aria-hidden="true" />
                 <span>Sign Out</span>
               </button>
             </div>
           ) : (
-            <>
+            <div className="space-y-2.5 pt-2">
               <Link
                 to="/login/student"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 text-amber-950 shadow-xs"
+                className="min-h-[44px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-extrabold bg-[#FFE0CC] text-[#7A3300] border border-[#F8D2B8] shadow-xs"
               >
-                <User className="w-5 h-5" />
-                <span>Student Hub Entry</span>
+                <User className="w-5 h-5" aria-hidden="true" />
+                <span>Student Hub Sign-In</span>
               </Link>
               <Link
                 to="/login/teacher"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-purple-700 border border-purple-200 hover:bg-purple-50"
+                className="min-h-[44px] flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold bg-white text-[#4A248A] border border-[#D5C2FE]"
               >
-                <GraduationCap className="w-5 h-5" />
-                <span>Educator & Therapist Portal</span>
+                <GraduationCap className="w-5 h-5" aria-hidden="true" />
+                <span>Teacher &amp; Specialist Portal</span>
               </Link>
-            </>
+            </div>
           )}
 
-          <button
-            type="button"
-            onClick={toggleLargeFont}
-            className="w-full text-center py-2 text-xs font-semibold text-slate-500 border border-slate-200 rounded-lg"
-          >
-            {largeFont ? 'Switch to Normal Text' : 'Switch to Larger Text (Accessible)'}
-          </button>
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={toggleLargeFont}
+              className="w-full min-h-[44px] text-center py-2.5 text-xs font-bold text-[#3D6355] border border-[rgba(36,72,61,0.2)] rounded-xl bg-white"
+            >
+              {largeFont ? 'Switch to Standard Text Size' : 'Switch to Larger Text (Accessible)'}
+            </button>
+          </div>
         </div>
       )}
     </header>
