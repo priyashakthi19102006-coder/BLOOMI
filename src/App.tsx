@@ -1,23 +1,52 @@
 import React from 'react'
 import { Routes, Route } from 'react-router-dom'
+import { AuthProvider } from './contexts/AuthContext'
 import { RootLayout } from './layouts/RootLayout'
 import { HomePage } from './pages/HomePage'
 import { StudentLoginPage } from './pages/StudentLoginPage'
 import { TeacherLoginPage } from './pages/TeacherLoginPage'
 import { WorldDetailsPage } from './pages/WorldDetailsPage'
+import { TeacherDashboardPage } from './pages/TeacherDashboardPage'
+import { StudentHubPage } from './pages/StudentHubPage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { ProtectedRoute } from './components/ProtectedRoute'
 
 export const App: React.FC = () => {
   return (
-    <Routes>
-      <Route path="/" element={<RootLayout />}>
-        <Route index element={<HomePage />} />
-        <Route path="login/student" element={<StudentLoginPage />} />
-        <Route path="login/teacher" element={<TeacherLoginPage />} />
-        <Route path="worlds/:worldId" element={<WorldDetailsPage />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Route>
-    </Routes>
+    <AuthProvider>
+      <Routes>
+        <Route path="/" element={<RootLayout />}>
+          {/* Public Routes */}
+          <Route index element={<HomePage />} />
+          <Route path="login/student" element={<StudentLoginPage />} />
+          <Route path="login/teacher" element={<TeacherLoginPage />} />
+          <Route path="worlds/:worldId" element={<WorldDetailsPage />} />
+
+          {/* Protected Educator Routes */}
+          <Route
+            path="teacher/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={['teacher', 'admin']}>
+                <TeacherDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Protected Student Routes */}
+          <Route
+            path="student/hub"
+            element={
+              <ProtectedRoute allowedRoles={['student', 'admin']}>
+                <StudentHubPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Fallback */}
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
+      </Routes>
+    </AuthProvider>
   )
 }
 

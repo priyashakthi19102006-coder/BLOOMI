@@ -1,20 +1,48 @@
 import React, { useState } from 'react'
-import { Link, useOutletContext } from 'react-router-dom'
-import { ArrowLeft, GraduationCap, Lock, Mail, Info, CheckCircle2 } from 'lucide-react'
-
-interface LayoutContext {
-  highContrast: boolean
-}
+import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { ArrowLeft, GraduationCap, Lock, Mail, AlertCircle, Info, Loader2 } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
 
 export const TeacherLoginPage: React.FC = () => {
-  const { highContrast } = useOutletContext<LayoutContext>()
+  const { loginTeacher, isConfigured, isLoading: authLoading } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [demoMessage, setDemoMessage] = useState(false)
+  const [localError, setLocalError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setDemoMessage(true)
+    setLocalError(null)
+
+    if (!email.trim()) {
+      setLocalError('Please enter your school or professional email.')
+      return
+    }
+
+    if (!password) {
+      setLocalError('Please enter your account password.')
+      return
+    }
+
+    if (!isConfigured) {
+      setLocalError(
+        'Supabase is not configured yet. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env.local file to sign in with live credentials.'
+      )
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+      await loginTeacher(email.trim(), password)
+      const targetDestination = (location.state as any)?.from?.pathname || '/teacher/dashboard'
+      navigate(targetDestination, { replace: true })
+    } catch (err: any) {
+      setLocalError(err.message || 'Invalid email or password.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -27,32 +55,40 @@ export const TeacherLoginPage: React.FC = () => {
         <span>Back to Learning Worlds</span>
       </Link>
 
-      <div
-        className={`rounded-3xl p-6 sm:p-10 border transition-all ${
-          highContrast
-            ? 'bg-neutral-900 border-yellow-400 text-yellow-300'
-            : 'bg-white border-purple-100 shadow-md'
-        }`}
-      >
+      <div className="rounded-3xl p-6 sm:p-10 border transition-all bg-white border-purple-100 shadow-md">
         <div className="text-center space-y-2 mb-8">
           <div className="w-16 h-16 mx-auto rounded-3xl bg-purple-100 text-purple-700 flex items-center justify-center shadow-xs">
             <GraduationCap className="w-8 h-8" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold font-fredoka text-slate-900">
-            Educator &amp; Therapist Portal
+            Educator &amp; Specialist Portal
           </h1>
           <p className="text-sm text-slate-500">
-            Manage classroom profiles, customize accessibility levels, and view analytics.
+            Sign in with your verified school email to manage classes and view learner progress.
           </p>
         </div>
 
-        {/* Prototype Info Banner */}
-        <div className="mb-6 p-4 rounded-2xl bg-purple-50 border border-purple-200 flex items-start gap-3 text-xs text-purple-900">
-          <Info className="w-5 h-5 text-purple-600 shrink-0 mt-0.5" />
-          <div>
-            <span className="font-bold">Stage 1 Foundation Interface:</span> Teacher authentication and analytics dashboards will connect to Supabase Auth and database tables in Stage 2.
+        {/* Configuration Notice if Supabase is unconfigured */}
+        {!isConfigured && (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-3 text-xs text-amber-900">
+            <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold">Backend Configuration Notice:</span> Supabase environment variables are currently set to placeholders. Add your project credentials to <code>.env.local</code> to enable live database authentication.
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Error Alert */}
+        {localError && (
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm flex items-start gap-3"
+          >
+            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+            <div className="font-medium">{localError}</div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
@@ -69,7 +105,9 @@ export const TeacherLoginPage: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="educator@school.edu"
+                disabled={isSubmitting}
                 className="w-full px-4 py-3 pl-10 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-400 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500"
+                required
               />
               <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
             </div>
@@ -89,7 +127,9 @@ export const TeacherLoginPage: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
+                disabled={isSubmitting}
                 className="w-full px-4 py-3 pl-10 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-400 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500"
+                required
               />
               <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
             </div>
@@ -97,20 +137,23 @@ export const TeacherLoginPage: React.FC = () => {
 
           <button
             type="submit"
-            className="w-full py-3.5 rounded-2xl font-bold text-white bg-purple-600 hover:bg-purple-700 shadow-md transition-all flex items-center justify-center gap-2"
+            disabled={isSubmitting || authLoading}
+            className="w-full py-3.5 rounded-2xl font-bold text-white bg-purple-600 hover:bg-purple-700 shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <span>Sign In to Educator Dashboard</span>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Verifying Credentials...</span>
+              </>
+            ) : (
+              <span>Sign In to Educator Dashboard</span>
+            )}
           </button>
         </form>
 
-        {demoMessage && (
-          <div className="mt-4 p-4 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 text-xs flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0" />
-            <span>
-              Interface verified. Supabase educator authentication will be hooked up in Stage 2.
-            </span>
-          </div>
-        )}
+        <div className="mt-6 pt-4 border-t border-slate-100 text-center text-xs text-slate-400">
+          Student accounts must sign in via the <Link to="/login/student" className="text-purple-600 font-semibold underline">Student Hub</Link>.
+        </div>
       </div>
     </div>
   )

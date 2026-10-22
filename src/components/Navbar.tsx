@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import { Sparkles, GraduationCap, User, Menu, X, Sun, Moon } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Sparkles, GraduationCap, User, Menu, X, Sun, Moon, LogOut } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
 
 interface NavbarProps {
   highContrast: boolean
@@ -17,6 +18,13 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
+  const { session, profile, role, logout } = useAuth()
+
+  const handleSignOut = async () => {
+    await logout()
+    navigate('/')
+  }
 
   return (
     <header
@@ -68,7 +76,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 title="Toggle High Contrast for Visual Support"
               >
                 {highContrast ? <Sun className="w-4 h-4 text-yellow-500" /> : <Moon className="w-4 h-4 text-purple-600" />}
-                <span>{highContrast ? 'Standard Mode' : 'High Contrast'}</span>
+                <span>{highContrast ? 'Standard' : 'High Contrast'}</span>
               </button>
 
               <button
@@ -79,7 +87,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 title="Toggle Text Sizing"
               >
                 <span className="font-bold text-sm">A+</span>
-                <span>{largeFont ? 'Default Text' : 'Larger Text'}</span>
+                <span>{largeFont ? 'Default' : 'Larger'}</span>
               </button>
             </div>
 
@@ -96,23 +104,57 @@ export const Navbar: React.FC<NavbarProps> = ({
                 Learning Worlds
               </Link>
 
-              {/* Student Entry */}
-              <Link
-                to="/login/student"
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-gradient-to-r from-amber-400 to-orange-400 text-amber-950 hover:brightness-105 shadow-sm transition-all transform hover:-translate-y-0.5"
-              >
-                <Sparkles className="w-4 h-4" />
-                <span>Student Hub</span>
-              </Link>
+              {session && profile ? (
+                /* Authenticated User Session View */
+                <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
+                  {role === 'teacher' ? (
+                    <Link
+                      to="/teacher/dashboard"
+                      className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-purple-100 text-purple-800 hover:bg-purple-200 transition-colors"
+                    >
+                      <GraduationCap className="w-4 h-4 text-purple-600" />
+                      <span>{profile.display_name || 'Educator Portal'}</span>
+                    </Link>
+                  ) : (
+                    <Link
+                      to="/student/hub"
+                      className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-100 text-amber-900 hover:bg-amber-200 transition-colors"
+                    >
+                      <Sparkles className="w-4 h-4 text-amber-600" />
+                      <span>{profile.display_name || 'Student Hub'}</span>
+                    </Link>
+                  )}
 
-              {/* Teacher Entry */}
-              <Link
-                to="/login/teacher"
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-purple-700 border border-purple-200 hover:bg-purple-50 transition-colors"
-              >
-                <GraduationCap className="w-4 h-4" />
-                <span>Educator Portal</span>
-              </Link>
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                    title="Sign Out"
+                    aria-label="Sign Out"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                /* Unauthenticated View */
+                <>
+                  <Link
+                    to="/login/student"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-gradient-to-r from-amber-400 to-orange-400 text-amber-950 hover:brightness-105 shadow-sm transition-all transform hover:-translate-y-0.5"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>Student Hub</span>
+                  </Link>
+
+                  <Link
+                    to="/login/teacher"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-purple-700 border border-purple-200 hover:bg-purple-50 transition-colors"
+                  >
+                    <GraduationCap className="w-4 h-4" />
+                    <span>Educator Portal</span>
+                  </Link>
+                </>
+              )}
             </nav>
           </div>
 
@@ -150,22 +192,62 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             🏠 Learning Worlds
           </Link>
-          <Link
-            to="/login/student"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 text-amber-950 shadow-xs"
-          >
-            <User className="w-5 h-5" />
-            <span>Student Hub Entry</span>
-          </Link>
-          <Link
-            to="/login/teacher"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-purple-700 border border-purple-200 hover:bg-purple-50"
-          >
-            <GraduationCap className="w-5 h-5" />
-            <span>Educator & Therapist Portal</span>
-          </Link>
+
+          {session && profile ? (
+            <div className="space-y-2 pt-2 border-t border-slate-100">
+              {role === 'teacher' ? (
+                <Link
+                  to="/teacher/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-4 py-3 rounded-xl font-bold bg-purple-100 text-purple-800"
+                >
+                  <GraduationCap className="w-5 h-5 text-purple-600" />
+                  <span>Educator Dashboard ({profile.display_name})</span>
+                </Link>
+              ) : (
+                <Link
+                  to="/student/hub"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-4 py-3 rounded-xl font-bold bg-amber-100 text-amber-900"
+                >
+                  <Sparkles className="w-5 h-5 text-amber-600" />
+                  <span>Student Hub ({profile.display_name})</span>
+                </Link>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false)
+                  handleSignOut()
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-rose-600 border border-rose-200 rounded-xl"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          ) : (
+            <>
+              <Link
+                to="/login/student"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 text-amber-950 shadow-xs"
+              >
+                <User className="w-5 h-5" />
+                <span>Student Hub Entry</span>
+              </Link>
+              <Link
+                to="/login/teacher"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-purple-700 border border-purple-200 hover:bg-purple-50"
+              >
+                <GraduationCap className="w-5 h-5" />
+                <span>Educator & Therapist Portal</span>
+              </Link>
+            </>
+          )}
+
           <button
             type="button"
             onClick={toggleLargeFont}
