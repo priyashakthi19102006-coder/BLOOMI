@@ -4,9 +4,16 @@ import type {
   StudentCurriculumProgress,
   WorldProgressSummary,
   LevelProgressRecord,
+  BadgeDefinition,
+  RewardSummary,
 } from '../types/curriculum.types'
 import { curriculumWorlds } from '../data/curriculum/curriculumGenerator'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import {
+  calculateTotalStars,
+  evaluateBadges,
+  getRewardSummary,
+} from './rewardEvaluator'
 
 const DEMO_STORAGE_KEY_PREFIX = 'bloomi_curriculum_progress_'
 
@@ -74,6 +81,7 @@ export function createInitialProgress(userId: string = 'demo_student', isDemo: b
     userId,
     isDemo,
     worlds,
+    earnedBadges: {},
   }
 }
 
@@ -83,6 +91,14 @@ export interface PersistenceInfo {
   storageType: 'supabase' | 'localStorage' | 'memory'
   statusLabel: string
   description: string
+}
+
+export interface LevelCompletionResult {
+  success: boolean
+  progress: StudentCurriculumProgress
+  message: string
+  newlyUnlockedBadges?: BadgeDefinition[]
+  totalStars?: number
 }
 
 export const progressionService = {
@@ -134,6 +150,17 @@ export const progressionService = {
         }
       })
 
+      if (!parsed.earnedBadges) {
+        parsed.earnedBadges = {}
+        needsResave = true
+      }
+
+      // Safe recalculation of eligible badges
+      const { newlyUnlocked } = evaluateBadges(parsed)
+      if (newlyUnlocked.length > 0) {
+        needsResave = true
+      }
+
       if (needsResave) {
         this.saveProgress(parsed)
       }
@@ -175,7 +202,6 @@ export const progressionService = {
     }
 
     try {
-      // Upsert records for completed levels or active attempts
       for (const worldId of Object.keys(progress.worlds) as WorldId[]) {
         const worldData = progress.worlds[worldId]
         for (const lvlStr of Object.keys(worldData.levelRecords)) {
@@ -200,7 +226,6 @@ export const progressionService = {
         }
       }
     } catch (err) {
-      // Cloud sync failure does not crash the app or erase local progress
       console.warn('Supabase sync skipped or failed:', err)
     }
   },
@@ -315,8 +340,10 @@ export const progressionService = {
 
   /**
    * Complete a level. Requires all 5 tasks to be completed.
-   * Completing unlocks level N+1 within this world only.
-   * Replaying preserves prior completion and highest stars earned.
+   * - Awards 3 stars upon completion.
+   * - Unlocks level N+1 within this world only.
+   * - Replaying preserves prior completion and highest stars earned (does NOT duplicate stars).
+   * - Evaluates achievement badges and unlocks eligible milestones.
    */
   completeLevel(
     worldId: WorldId,
@@ -324,7 +351,7 @@ export const progressionService = {
     completedTasksCount: number,
     starsEarned: number = 3,
     userId: string = 'demo_student'
-  ): { success: boolean; progress: StudentCurriculumProgress; message: string } {
+  ): LevelCompletionResult {
     const progress = this.getProgress(userId)
     const worldProg = progress.worlds[worldId]
 
@@ -337,7 +364,7 @@ export const progressionService = {
       }
     }
 
-    // Record completion
+    // Record completion in world list if not present
     if (!worldProg.completedLevelNumbers.includes(levelNumber)) {
       worldProg.completedLevelNumbers.push(levelNumber)
       worldProg.completedLevelNumbers.sort((a, b) => a - b)
@@ -366,12 +393,18 @@ export const progressionService = {
       worldProg.currentLevelNumber = Math.max(worldProg.currentLevelNumber, levelNumber + 1)
     }
 
+    // Evaluate badges and rewards
+    const { newlyUnlocked } = evaluateBadges(progress)
+    const totalStars = calculateTotalStars(progress)
+
     this.saveProgress(progress)
 
     return {
       success: true,
       progress,
       message: `Level ${levelNumber} in ${worldId} completed!`,
+      newlyUnlockedBadges: newlyUnlocked,
+      totalStars,
     }
   },
 
@@ -399,6 +432,22 @@ export const progressionService = {
       currentLevelNumber,
       percentage,
     }
+  },
+
+  /**
+   * Get total earned Bloom Stars across all unique completed levels.
+   */
+  getTotalStars(userId: string = 'demo_student'): number {
+    const progress = this.getProgress(userId)
+    return calculateTotalStars(progress)
+  },
+
+  /**
+   * Get comprehensive reward summary (stars, earned badges, locked badges with progress).
+   */
+  getRewardSummary(userId: string = 'demo_student'): RewardSummary {
+    const progress = this.getProgress(userId)
+    return getRewardSummary(progress)
   },
 
   /**

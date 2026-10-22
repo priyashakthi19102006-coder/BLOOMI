@@ -30,6 +30,7 @@ export const AdventureMapPage: React.FC = () => {
   const progress = progressionService.getProgress(studentId)
   const worldSummary = progressionService.getWorldSummary(activeWorldId, progress)
   const persistenceInfo = progressionService.getPersistenceInfo(studentId)
+  const totalStars = progressionService.getTotalStars(studentId)
 
   const handleSelectWorld = (wId: WorldId) => {
     setSearchParams({ world: wId })
@@ -92,17 +93,24 @@ export const AdventureMapPage: React.FC = () => {
           <span>Back to Student Hub</span>
         </Link>
 
-        {/* Persistence Indicator */}
-        <div
-          title={persistenceInfo.description}
-          className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-bold ${
-            persistenceInfo.isCloudSynced
-              ? 'bg-[#CDEFE0] border-[#B2E6CE] text-[#16563F]'
-              : 'bg-[#FFFBE6] border-[#FCE58D] text-[#664B00]'
-          }`}
-        >
-          <Info className="w-4 h-4 shrink-0" aria-hidden="true" />
-          <span>{persistenceInfo.statusLabel}</span>
+        <div className="flex items-center gap-3">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FFFBE6] border border-[#FCE58D] text-xs font-extrabold text-[#664B00]">
+            <Star className="w-3.5 h-3.5 fill-[#FCE58D]" aria-hidden="true" />
+            <span>{totalStars} Stars</span>
+          </div>
+
+          {/* Persistence Indicator */}
+          <div
+            title={persistenceInfo.description}
+            className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-bold ${
+              persistenceInfo.isCloudSynced
+                ? 'bg-[#CDEFE0] border-[#B2E6CE] text-[#16563F]'
+                : 'bg-[#FFFBE6] border-[#FCE58D] text-[#664B00]'
+            }`}
+          >
+            <Info className="w-4 h-4 shrink-0" aria-hidden="true" />
+            <span>{persistenceInfo.statusLabel}</span>
+          </div>
         </div>
       </div>
 

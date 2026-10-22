@@ -119,6 +119,7 @@ export interface StudentCurriculumProgress {
     currentLevelNumber: number
     levelRecords: Record<number, LevelProgressRecord>
   }>
+  earnedBadges?: Record<string, string> // badgeId -> unlockedAt ISO string
 }
 
 export interface WorldProgressSummary {
@@ -129,3 +130,33 @@ export interface WorldProgressSummary {
   currentLevelNumber: number
   percentage: number
 }
+
+export type BadgeCategory = 'milestone' | 'exploration' | 'writing' | 'speaking' | 'visual' | 'social'
+
+export interface BadgeDefinition {
+  id: string
+  title: string
+  description: string
+  category: BadgeCategory
+  iconName: string
+  criteriaDescription: string
+  targetCount: number
+}
+
+export interface RewardSummary {
+  totalStars: number
+  totalCompletedLevels: number
+  earnedBadges: {
+    badge: BadgeDefinition
+    unlockedAt: string
+  }[]
+  lockedBadges: {
+    badge: BadgeDefinition
+    progressCount: number
+    targetCount: number
+    percentage: number
+  }[]
+  unlockedBadgeIds: string[]
+  recentMilestone?: BadgeDefinition | null
+}
+

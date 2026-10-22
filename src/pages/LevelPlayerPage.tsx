@@ -6,7 +6,7 @@ import { progressionService } from '../services/progression.service'
 import { TaskPlayer } from '../components/TaskPlayer'
 import { useAuth } from '../contexts/AuthContext'
 import type { AccessibilityContextType } from '../layouts/RootLayout'
-import type { WorldId } from '../types/curriculum.types'
+import type { WorldId, BadgeDefinition } from '../types/curriculum.types'
 
 export const LevelPlayerPage: React.FC = () => {
   const { worldId, levelNumber } = useParams<{ worldId: string; levelNumber: string }>()
@@ -30,6 +30,8 @@ export const LevelPlayerPage: React.FC = () => {
   const [currentTaskIndex, setCurrentTaskIndex] = useState<number>(0)
   const [completedTaskIds, setCompletedTaskIds] = useState<string[]>([])
   const [isLevelFinished, setIsLevelFinished] = useState<boolean>(false)
+  const [newlyUnlockedBadges, setNewlyUnlockedBadges] = useState<BadgeDefinition[]>([])
+  const [totalStars, setTotalStars] = useState<number>(() => progressionService.getTotalStars(studentId))
 
   // Restore previously completed tasks if child navigated away and returned
   useEffect(() => {
@@ -90,8 +92,10 @@ export const LevelPlayerPage: React.FC = () => {
     if (currentTaskIndex + 1 < level.tasks.length) {
       setCurrentTaskIndex((prev) => prev + 1)
     } else {
-      // All 5 tasks completed!
-      progressionService.completeLevel(parsedWorldId, parsedLevelNum, 5, 3, studentId)
+      // All 5 tasks completed! Award 3 stars and evaluate milestone badges
+      const completionResult = progressionService.completeLevel(parsedWorldId, parsedLevelNum, 5, 3, studentId)
+      setNewlyUnlockedBadges(completionResult.newlyUnlockedBadges || [])
+      setTotalStars(completionResult.totalStars || progressionService.getTotalStars(studentId))
       setIsLevelFinished(true)
     }
   }
@@ -99,6 +103,7 @@ export const LevelPlayerPage: React.FC = () => {
   const handleReplay = () => {
     setCurrentTaskIndex(0)
     setCompletedTaskIds([])
+    setNewlyUnlockedBadges([])
     setIsLevelFinished(false)
   }
 
@@ -231,20 +236,52 @@ export const LevelPlayerPage: React.FC = () => {
             🌸
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex justify-center gap-1.5 text-[#8A6400]">
-              <Star className="w-8 h-8 fill-[#FFF0B3]" />
-              <Star className="w-8 h-8 fill-[#FFF0B3]" />
-              <Star className="w-8 h-8 fill-[#FFF0B3]" />
+              <Star className="w-9 h-9 fill-[#FFF0B3] text-[#8A6400]" />
+              <Star className="w-9 h-9 fill-[#FFF0B3] text-[#8A6400]" />
+              <Star className="w-9 h-9 fill-[#FFF0B3] text-[#8A6400]" />
+            </div>
+
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#FFFBE6] border border-[#FCE58D] text-xs font-extrabold text-[#664B00]">
+              <Star className="w-4 h-4 fill-[#FCE58D]" aria-hidden="true" />
+              <span>3 Bloom Stars Earned &bull; Total: {totalStars} Stars</span>
             </div>
 
             <h2 className="text-2xl sm:text-3xl font-extrabold font-fredoka">
               Level {level.levelNumber} Complete!
             </h2>
             <p className="text-sm sm:text-base font-medium max-w-md mx-auto opacity-90">
-              Outstanding work! You finished all 5 tasks and helped your learning garden grow.
+              Outstanding work! You completed all 5 tasks and helped your learning garden grow. Every flower blooms in its own time! 🌸
             </p>
           </div>
+
+          {/* Newly Unlocked Milestone Badge Showcase */}
+          {newlyUnlockedBadges.length > 0 && (
+            <div
+              role="status"
+              className={`p-4 sm:p-5 rounded-2xl border-2 max-w-md mx-auto text-left flex items-start gap-3.5 shadow-xs ${
+                highContrast
+                  ? 'bg-[#152E26] border-[#FFF0B3] text-[#FFFDF7]'
+                  : 'bg-[#FFF9F5] border-[#F8D2B8] text-[#24483D]'
+              }`}
+            >
+              <div className="w-12 h-12 rounded-2xl bg-[#FFE0CC] text-[#7A3300] flex items-center justify-center shrink-0 text-2xl font-bold border border-[#F8D2B8]">
+                🌸
+              </div>
+              <div className="space-y-1">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#7A3300] bg-[#FFF0B3] px-2.5 py-0.5 rounded-full">
+                  Achievement Unlocked!
+                </span>
+                <h3 className="font-extrabold text-base text-[#24483D] dark:text-[#FFFDF7]">
+                  {newlyUnlockedBadges[0].title}
+                </h3>
+                <p className="text-xs text-[#3D6355] dark:text-[#D3E5DC] font-medium">
+                  {newlyUnlockedBadges[0].description}
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="pt-4 flex flex-wrap justify-center gap-4">
             {parsedLevelNum < 50 ? (
