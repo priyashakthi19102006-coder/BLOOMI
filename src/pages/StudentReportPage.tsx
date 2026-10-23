@@ -19,6 +19,7 @@ import {
   Sparkles,
   Lock,
 } from 'lucide-react'
+import { CompanionAvatar } from '../components/worlds/CompanionAvatar'
 
 export const StudentReportPage: React.FC = () => {
   const { studentId } = useParams<{ studentId: string }>()
@@ -165,15 +166,6 @@ export const StudentReportPage: React.FC = () => {
 
   const { student, worldSummaries, rewardSummary, demonstratedSuccesses, areasForGrowth, timeline, observations, suggestions, supportRecords = [], sessions = [] } = report
 
-  const avatarMap: Record<string, string> = {
-    lion: '🦁',
-    panda: '🐼',
-    fox: '🦊',
-    dolphin: '🐬',
-  }
-
-  const avatar = avatarMap[student.avatarId] || '🌟'
-
   return (
     <div className="max-w-6xl mx-auto py-4 sm:py-8 space-y-6">
       {/* Top Navigation Bar */}
@@ -217,8 +209,8 @@ export const StudentReportPage: React.FC = () => {
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 relative z-10">
           <div className="flex items-center gap-4">
-            <div className="w-18 h-18 rounded-2xl bg-[#160a33] border-2 border-[#ff2a85]/60 flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(255,42,133,0.35)]">
-              {avatar}
+            <div className="w-18 h-18 rounded-2xl bg-[#160a33] border-2 border-[#ff2a85]/60 flex items-center justify-center shadow-[0_0_20px_rgba(255,42,133,0.35)] p-1 shrink-0">
+              <CompanionAvatar id={student.avatarId || 'panda'} size="md" />
             </div>
             <div>
               <div className="flex items-center gap-2">

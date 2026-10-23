@@ -5,6 +5,7 @@ import { progressionService } from '../services/progression.service'
 import { sessionTrackingService } from '../services/sessionTracking.service'
 import { curriculumService, curriculumWorlds } from '../data/curriculum/curriculumGenerator'
 import { BadgeCard } from '../components/BadgeCard'
+import { CompanionAvatar } from '../components/worlds/CompanionAvatar'
 import type { AccessibilityContextType } from '../layouts/RootLayout'
 import type { WorldId, StudentCurriculumProgress } from '../types/curriculum.types'
 import {
@@ -148,15 +149,6 @@ export const StudentHubPage: React.FC = () => {
     }, 400)
   }
 
-  const avatarMap: Record<string, string> = {
-    lion: '🦁',
-    panda: '🐼',
-    fox: '🦊',
-    dolphin: '🐬',
-  }
-
-  const avatarEmoji = profile?.avatar_id ? avatarMap[profile.avatar_id] || '🌟' : '🌟'
-
   // Filtered badges count
   const displayedBadgesCount =
     badgeFilter === 'all'
@@ -263,8 +255,8 @@ export const StudentHubPage: React.FC = () => {
 
         <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="w-20 h-20 rounded-3xl flex items-center justify-center text-4xl border-2 border-[#ff2a85]/60 bg-[#160a33] shadow-[0_0_20px_rgba(255,42,133,0.35)]">
-              {avatarEmoji}
+            <div className="w-20 h-20 rounded-3xl flex items-center justify-center border-2 border-[#ff2a85]/60 bg-[#160a33] shadow-[0_0_20px_rgba(255,42,133,0.35)] p-1 shrink-0">
+              <CompanionAvatar id={profile?.avatar_id || 'panda'} size="md" />
             </div>
             <div>
               <div className="flex items-center gap-2">

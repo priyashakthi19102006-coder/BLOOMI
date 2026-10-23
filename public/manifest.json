@@ -1,0 +1,19 @@
+{
+  "name": "BLOOMI — Magical Learning Adventure",
+  "short_name": "BLOOMI",
+  "description": "An inclusive, accessible Grade 3 learning universe across four magical cartoon worlds.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#06020e",
+  "theme_color": "#06020e",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/bloomi-logo.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "kids"]
+}
