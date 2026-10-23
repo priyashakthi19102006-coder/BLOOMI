@@ -285,9 +285,8 @@ function generateTasksForLevel(
     const taskId = `task_${worldId}_${levelNumber}_${taskNum}`
     let taskType: TaskType = 'multiple_choice'
     let taskTitle = `Task ${taskNum}: ${theme.title}`
-    let data: any
+    let data: MultipleChoiceTaskData | MatchingTaskData | OrderingTaskData | LetterInputTaskData
 
-    // Alternate task types based on taskNum and world to ensure rich, world-specific variety
     if (worldId === 'writing') {
       if (taskNum === 1 || taskNum === 5) {
         taskType = 'multiple_choice'
@@ -295,49 +294,198 @@ function generateTasksForLevel(
           taskNum === 1
             ? `Barnaby's Letter Track: ${theme.title}`
             : `Carnival Marquee Quest: ${theme.title}`
-        data = {
-          type: 'multiple_choice',
-          question: `Which letter or sound card completes the roller coaster track for ${theme.title}?`,
-          options: [
-            { id: 'opt_1', text: `Primary choice for ${theme.title}`, isCorrect: true },
-            { id: 'opt_2', text: 'Alternative letter pattern', isCorrect: false },
-            { id: 'opt_3', text: 'Contrast practice tile', isCorrect: false },
-          ],
-          explanation: `Great job! This correctly reinforces ${theme.objective}`,
-        } as MultipleChoiceTaskData
+
+        if (levelNumber <= 10) {
+          // Letter Shapes & Orientations
+          const letterPairs = [
+            { target: 'b', pair: 'd', hint: 'round belly on the right', word: 'balloon' },
+            { target: 'd', pair: 'b', hint: 'straight back with round belly on the left', word: 'drum' },
+            { target: 'p', pair: 'q', hint: 'stem hanging down with circle on the right', word: 'popcorn' },
+            { target: 'm', pair: 'w', hint: 'two arches facing downward', word: 'marquee' },
+            { target: 'u', pair: 'n', hint: 'open cup curve facing upward', word: 'umbrella' },
+            { target: 's', pair: 'z', hint: 'smooth double curve like a snake', word: 'star' },
+            { target: 'c', pair: 'o', hint: 'open circle curve', word: 'carnival' },
+            { target: 't', pair: 'f', hint: 'tall line crossed in the middle', word: 'ticket' },
+            { target: 'y', pair: 'v', hint: 'tail extending below the baseline', word: 'yellow' },
+            { target: 'A', pair: 'a', hint: 'uppercase pointed tent shape', word: 'attraction' },
+          ]
+          const pair = letterPairs[(levelNumber - 1) % letterPairs.length]
+
+          if (taskNum === 1) {
+            data = {
+              type: 'multiple_choice',
+              question: `Barnaby needs the correct rail piece for the word '${pair.word}'. Which letter has the ${pair.hint}?`,
+              options: [
+                { id: 'opt_1', text: `Letter '${pair.target}' (${pair.hint})`, isCorrect: true },
+                { id: 'opt_2', text: `Letter '${pair.pair}' (faces the opposite direction)`, isCorrect: false },
+                { id: 'opt_3', text: `Letter 'x' (crossing diagonal lines)`, isCorrect: false },
+              ],
+              explanation: `Spot on! Letter '${pair.target}' has the ${pair.hint}, perfectly repairing the coaster track for '${pair.word}'.`,
+            }
+          } else {
+            data = {
+              type: 'multiple_choice',
+              question: `The carnival marquee reads: 'Welcome to the Big __how!' Which letter completes the word 'Show'?`,
+              options: [
+                { id: 'opt_1', text: "Letter 'S' (as in Show)", isCorrect: true },
+                { id: 'opt_2', text: "Letter 'C' (as in Chow)", isCorrect: false },
+                { id: 'opt_3', text: "Letter 'Z' (as in Zhou)", isCorrect: false },
+              ],
+              explanation: "Hooray! 'S' creates the word 'Show', lighting up the marquee entrance.",
+            }
+          }
+        } else if (levelNumber <= 20) {
+          // Phonics & Word Families
+          const words = [
+            { w: 'cat', f: '-at', rhyme: 'hat', alt: 'cup' },
+            { w: 'pen', f: '-en', rhyme: 'hen', alt: 'pot' },
+            { w: 'pin', f: '-in', rhyme: 'win', alt: 'pan' },
+            { w: 'pot', f: '-ot', rhyme: 'hot', alt: 'pig' },
+            { w: 'sun', f: '-un', rhyme: 'run', alt: 'sit' },
+            { w: 'bag', f: '-ag', rhyme: 'tag', alt: 'bug' },
+            { w: 'red', f: '-ed', rhyme: 'bed', alt: 'rod' },
+            { w: 'zip', f: '-ip', rhyme: 'tip', alt: 'zap' },
+            { w: 'hop', f: '-op', rhyme: 'top', alt: 'hut' },
+            { w: 'tub', f: '-ub', rhyme: 'rub', alt: 'tab' },
+          ]
+          const item = words[(levelNumber - 11) % words.length]
+
+          data = {
+            type: 'multiple_choice',
+            question: `Which word shares the same rhyming family ending (${item.f}) with '${item.w}'?`,
+            options: [
+              { id: 'opt_1', text: `'${item.rhyme}' (rhymes with ${item.w})`, isCorrect: true },
+              { id: 'opt_2', text: `'${item.alt}' (different vowel sound)`, isCorrect: false },
+              { id: 'opt_3', text: `'car' (unrelated ending)`, isCorrect: false },
+            ],
+            explanation: `Great listening! '${item.w}' and '${item.rhyme}' both end in '${item.f}'.`,
+          }
+        } else if (levelNumber <= 30) {
+          // Blends & Digraphs
+          const blends = [
+            { b: 'bl-', ex: 'blue', w: 'blanket', dist: 'fl-' },
+            { b: 'cl-', ex: 'clown', w: 'cloud', dist: 'gl-' },
+            { b: 'sp-', ex: 'spin', w: 'sparkle', dist: 'st-' },
+            { b: 'st-', ex: 'star', w: 'station', dist: 'sp-' },
+            { b: 'sh-', ex: 'shine', w: 'shadow', dist: 'ch-' },
+            { b: 'ch-', ex: 'cheer', w: 'chocolate', dist: 'sh-' },
+            { b: 'th-', ex: 'thrill', w: 'thunder', dist: 'wh-' },
+            { b: 'tr-', ex: 'train', w: 'track', dist: 'dr-' },
+            { b: 'pl-', ex: 'play', w: 'planet', dist: 'bl-' },
+            { b: 'gr-', ex: 'grand', w: 'green', dist: 'cr-' },
+          ]
+          const blendItem = blends[(levelNumber - 21) % blends.length]
+
+          data = {
+            type: 'multiple_choice',
+            question: `Which starting blend card unlocks the carnival gate for '${blendItem.w}'?`,
+            options: [
+              { id: 'opt_1', text: `'${blendItem.b}' (as in ${blendItem.ex} and ${blendItem.w})`, isCorrect: true },
+              { id: 'opt_2', text: `'${blendItem.dist}' (different consonant blend)`, isCorrect: false },
+              { id: 'opt_3', text: `'pr-' (unrelated sound)`, isCorrect: false },
+            ],
+            explanation: `Super decoding! '${blendItem.b}' blends smoothly to start '${blendItem.w}'.`,
+          }
+        } else {
+          // Sight Words, Grammar & Sentence Comprehension
+          data = {
+            type: 'multiple_choice',
+            question: `Read the carnival guide: 'Barnaby and his friends ___ laughing on the roller coaster.' Which verb fits best?`,
+            options: [
+              { id: 'opt_1', text: 'were (plural past tense for friends)', isCorrect: true },
+              { id: 'opt_2', text: 'was (singular only)', isCorrect: false },
+              { id: 'opt_3', text: 'is (present singular)', isCorrect: false },
+            ],
+            explanation: "Grammar champion! 'Friends' is plural, so 'were laughing' completes the sentence accurately.",
+          }
+        }
       } else if (taskNum === 2) {
         taskType = 'matching'
         taskTitle = `Ferris Wheel Sound Match: ${theme.title}`
-        data = {
-          type: 'matching',
-          prompt: `Match the coaster cars with matching sounds in ${theme.title}:`,
-          pairs: [
-            { id: 'pair_1', left: `Letter Card (${theme.title.slice(0, 10)})`, right: 'Sound Match A' },
-            { id: 'pair_2', left: 'Word Ending Partner', right: 'Sound Match B' },
-          ],
-        } as MatchingTaskData
+
+        if (levelNumber <= 15) {
+          data = {
+            type: 'matching',
+            prompt: 'Match each uppercase carnival letter with its lowercase partner:',
+            pairs: [
+              { id: 'pair_1', left: "Uppercase 'B'", right: "Lowercase 'b'" },
+              { id: 'pair_2', left: "Uppercase 'D'", right: "Lowercase 'd'" },
+            ],
+          }
+        } else if (levelNumber <= 30) {
+          data = {
+            type: 'matching',
+            prompt: 'Match each consonant blend with the carnival word it starts:',
+            pairs: [
+              { id: 'pair_1', left: "Blend 'st-'", right: "Word: 'star'" },
+              { id: 'pair_2', left: "Blend 'tr-'", right: "Word: 'track'" },
+            ],
+          }
+        } else {
+          data = {
+            type: 'matching',
+            prompt: 'Match each carnival word with its describing partner:',
+            pairs: [
+              { id: 'pair_1', left: 'Glowing carnival lanterns', right: 'Bright illumination' },
+              { id: 'pair_2', left: 'Speedy wooden coaster', right: 'Rapid thrilling ride' },
+            ],
+          }
+        }
       } else if (taskNum === 3) {
         taskType = 'ordering'
         taskTitle = `Carnival Word Train: ${theme.title}`
-        data = {
-          type: 'ordering',
-          prompt: 'Arrange the word cars in correct spelling order:',
-          items: [
-            { id: 'item_1', text: 'Starting Letter', correctOrder: 1 },
-            { id: 'item_2', text: 'Vowel Center', correctOrder: 2 },
-            { id: 'item_3', text: 'Ending Sound', correctOrder: 3 },
-          ],
-        } as OrderingTaskData
+
+        if (levelNumber <= 20) {
+          data = {
+            type: 'ordering',
+            prompt: "Arrange the letter train cars in correct order to spell 'CAR':",
+            items: [
+              { id: 'item_1', text: "Letter 'C'", correctOrder: 1 },
+              { id: 'item_2', text: "Letter 'A'", correctOrder: 2 },
+              { id: 'item_3', text: "Letter 'R'", correctOrder: 3 },
+            ],
+          }
+        } else if (levelNumber <= 35) {
+          data = {
+            type: 'ordering',
+            prompt: "Arrange the letter cars in order to spell 'RIDE':",
+            items: [
+              { id: 'item_1', text: "R (first sound)", correctOrder: 1 },
+              { id: 'item_2', text: "I (long vowel)", correctOrder: 2 },
+              { id: 'item_3', text: "D (consonant)", correctOrder: 3 },
+            ],
+          }
+        } else {
+          data = {
+            type: 'ordering',
+            prompt: 'Arrange the word cars to build a complete sentence:',
+            items: [
+              { id: 'item_1', text: '1. The festive carousel', correctOrder: 1 },
+              { id: 'item_2', text: '2. spins cheerfully', correctOrder: 2 },
+              { id: 'item_3', text: '3. under twinkling lights.', correctOrder: 3 },
+            ],
+          }
+        }
       } else {
         taskType = 'letter_input'
         taskTitle = `Ticket Booth Letter Forge: ${theme.title}`
+
+        const blanks = [
+          { prompt: "Type the missing vowel for Barnaby's ticket: c_t (a small pet)", blank: 'c_t', exp: 'a', alts: ['A'] },
+          { prompt: "Type the missing vowel for the park map: b_d (where you sleep)", blank: 'b_d', exp: 'e', alts: ['E'] },
+          { prompt: "Type the missing vowel for the coaster: r_de (roller coaster fun)", blank: 'r_de', exp: 'i', alts: ['I'] },
+          { prompt: "Type the missing vowel for the carnival prize: st_r (glowing in sky)", blank: 'st_r', exp: 'a', alts: ['A'] },
+          { prompt: "Type the missing vowel for daytime: s_n (shines bright)", blank: 's_n', exp: 'u', alts: ['U'] },
+        ]
+        const blankItem = blanks[(levelNumber - 1) % blanks.length]
+
         data = {
           type: 'letter_input',
-          prompt: `Type or select the missing letter for the ride ticket in ${theme.title}:`,
-          wordWithBlank: 'b_d',
-          expectedLetter: 'e',
-          acceptableAlternatives: ['E'],
-        } as LetterInputTaskData
+          prompt: blankItem.prompt,
+          wordWithBlank: blankItem.blank,
+          expectedLetter: blankItem.exp,
+          acceptableAlternatives: blankItem.alts,
+        }
       }
     } else if (worldId === 'speaking') {
       if (taskNum === 2 || taskNum === 4) {
@@ -346,25 +494,26 @@ function generateTasksForLevel(
           taskNum === 2
             ? `Chef Pip's Recipe Sounds: ${theme.title}`
             : `AAC Kitchen Picture Board: ${theme.title}`
-        data = {
-          type: 'matching',
-          prompt:
-            taskNum === 2
-              ? `Listen and match the culinary sounds with recipe ingredients:`
-              : `Match the picture communication card with the cooking action:`,
-          pairs: [
-            {
-              id: 'pair_1',
-              left: taskNum === 2 ? 'Whisking Batter' : 'Card: "More Strawberries"',
-              right: taskNum === 2 ? 'Sweet Cake Flour' : 'Add fresh fruit to bowl',
-            },
-            {
-              id: 'pair_2',
-              left: taskNum === 2 ? 'Oven Timer Bell' : 'Card: "All Done"',
-              right: taskNum === 2 ? 'Golden Loaf Ready' : 'Baking step complete',
-            },
-          ],
-        } as MatchingTaskData
+
+        if (taskNum === 2) {
+          data = {
+            type: 'matching',
+            prompt: 'Match each magical kitchen action with the sound it makes:',
+            pairs: [
+              { id: 'pair_1', left: 'Whisking fluffy batter in bowl', right: 'Soft gentle swirling sound' },
+              { id: 'pair_2', left: 'Chopping fresh crisp apples', right: 'Crisp rhythmic tap on cutting board' },
+            ],
+          }
+        } else {
+          data = {
+            type: 'matching',
+            prompt: 'Match each picture communication card with what you need:',
+            pairs: [
+              { id: 'pair_1', left: 'Picture Card: "More Honey Please"', right: 'Add golden sweetness to bowl' },
+              { id: 'pair_2', left: 'Picture Card: "Timer Finished"', right: 'Take golden baked bread from oven' },
+            ],
+          }
+        }
       } else if (taskNum === 3) {
         taskType = 'ordering'
         taskTitle = `Recipe Step Sequencing: ${theme.title}`
@@ -372,24 +521,24 @@ function generateTasksForLevel(
           type: 'ordering',
           prompt: 'Arrange the baking recipe steps in chronological order:',
           items: [
-            { id: 'item_1', text: 'Gather recipe ingredients', correctOrder: 1 },
-            { id: 'item_2', text: 'Mix together in bowl', correctOrder: 2 },
-            { id: 'item_3', text: 'Bake in magic oven', correctOrder: 3 },
+            { id: 'item_1', text: 'Step 1: Rinse fresh berries and measure oat flour', correctOrder: 1 },
+            { id: 'item_2', text: 'Step 2: Stir ingredients gently in the mixing bowl', correctOrder: 2 },
+            { id: 'item_3', text: 'Step 3: Bake in the magic oven until fragrant and warm', correctOrder: 3 },
           ],
-        } as OrderingTaskData
+        }
       } else {
         taskType = 'multiple_choice'
         taskTitle = `Magical Cafe Order: ${theme.title}`
         data = {
           type: 'multiple_choice',
-          question: `Listen carefully: What does the customer order in ${theme.title}?`,
+          question: `Customer Panda orders: 'One warm cinnamon roll with cold apple cider, please.' What did they order?`,
           options: [
-            { id: 'opt_1', text: 'The accurate spoken word or sound', isCorrect: true },
-            { id: 'opt_2', text: 'A different pitch or word', isCorrect: false },
-            { id: 'opt_3', text: 'An unrelated ambient sound', isCorrect: false },
+            { id: 'opt_1', text: 'Warm cinnamon roll & cold apple cider', isCorrect: true },
+            { id: 'opt_2', text: 'Spicy pepper soup with green tea', isCorrect: false },
+            { id: 'opt_3', text: 'Crunchy potato chips with water', isCorrect: false },
           ],
-          explanation: `Wonderful listening! That matches ${theme.objective}`,
-        } as MultipleChoiceTaskData
+          explanation: "Splendid listening! You matched the customer's exact bakery order.",
+        }
       }
     } else if (worldId === 'visual') {
       if (taskNum === 1 || taskNum === 3) {
@@ -398,39 +547,51 @@ function generateTasksForLevel(
           taskNum === 1
             ? `Nova's Constellation Match: ${theme.title}`
             : `Space Station Visual Matrix: ${theme.title}`
-        data = {
-          type: 'matching',
-          prompt: `Match the star patterns and symmetrical cosmic shapes for ${theme.title}:`,
-          pairs: [
-            { id: 'pair_1', left: 'Star Pattern Alpha', right: 'Constellation Alpha' },
-            { id: 'pair_2', left: 'Orbit Geometry Beta', right: 'Constellation Beta' },
-          ],
-        } as MatchingTaskData
+
+        if (taskNum === 1) {
+          data = {
+            type: 'matching',
+            prompt: 'Match each star constellation with its cosmic shape:',
+            pairs: [
+              { id: 'pair_1', left: 'Ursa Major (Big Bear)', right: 'Seven stars forming a bright ladle' },
+              { id: 'pair_2', left: 'Cassiopeia (Star Crown)', right: 'Five stars forming a wide W in the sky' },
+            ],
+          }
+        } else {
+          data = {
+            type: 'matching',
+            prompt: 'Match each satellite module with its spatial position on the station:',
+            pairs: [
+              { id: 'pair_1', left: 'Top Solar Array Panel', right: 'Facing direct starlight above' },
+              { id: 'pair_2', left: 'Lower Observation Cupola', right: 'Looking down toward planetary rings' },
+            ],
+          }
+        }
       } else if (taskNum === 2) {
         taskType = 'ordering'
         taskTitle = `Planet Mission Orbit Sequence: ${theme.title}`
         data = {
           type: 'ordering',
-          prompt: 'Arrange the planetary exploration stages in sequence:',
+          prompt: 'Arrange the planetary space mission stages in order:',
           items: [
-            { id: 'item_1', text: 'Stage 1: Launch from station', correctOrder: 1 },
-            { id: 'item_2', text: 'Stage 2: Lunar orbit scan', correctOrder: 2 },
-            { id: 'item_3', text: 'Stage 3: Nebula touchdown', correctOrder: 3 },
+            { id: 'item_1', text: 'Stage 1: Launch rocket from space station pad', correctOrder: 1 },
+            { id: 'item_2', text: 'Stage 2: Enter smooth orbit around Lunar Base', correctOrder: 2 },
+            { id: 'item_3', text: 'Stage 3: Touch down softly on Mars research crater', correctOrder: 3 },
           ],
-        } as OrderingTaskData
+        }
       } else {
         taskType = 'multiple_choice'
         taskTitle = `Alien Guide Telescope Quest: ${theme.title}`
         data = {
           type: 'multiple_choice',
-          question: `Which visual piece completes the starry pattern in ${theme.title}?`,
+          question: 'Look at Nova\'s repeating star pattern: Gold Star ➔ Blue Moon ➔ Gold Star ➔ Blue Moon ➔ ____. Which tile comes next?',
           options: [
-            { id: 'opt_1', text: 'Matching symmetry or pattern piece', isCorrect: true },
-            { id: 'opt_2', text: 'Incorrect orientation', isCorrect: false },
-            { id: 'opt_3', text: 'Different color or shape', isCorrect: false },
+            { id: 'opt_1', text: 'Gold Star (completes the repeating AB pattern)', isCorrect: true },
+            { id: 'opt_2', text: 'Green Comet (not part of the sequence)', isCorrect: false },
+            { id: 'opt_3', text: 'Purple Planet (wrong color and shape)', isCorrect: false },
           ],
-          explanation: `Sharp eye! You observed ${theme.objective}`,
-        } as MultipleChoiceTaskData
+          explanation: 'Sharp detective eye! Following the alternating pattern, Gold Star comes next.',
+        }
       }
     } else {
       // Social Adventure (Magic Animal World)
@@ -439,37 +600,37 @@ function generateTasksForLevel(
         taskTitle = `Sanctuary Kindness Pairs: ${theme.title}`
         data = {
           type: 'matching',
-          prompt: 'Connect the feeling or situation with a kind, respectful response:',
+          prompt: 'Match each sanctuary friend feeling with a kind, caring response:',
           pairs: [
-            { id: 'pair_1', left: 'Friend feeling tired or crowded', right: 'Offer quiet space' },
-            { id: 'pair_2', left: 'Excited about a game', right: 'Cheer and share joy' },
+            { id: 'pair_1', left: 'Friend feeling tired or crowded by noise', right: 'Offer headphones or quiet space' },
+            { id: 'pair_2', left: 'Friend excited about a finished drawing', right: 'Cheer and celebrate their effort' },
           ],
-        } as MatchingTaskData
+        }
       } else if (taskNum === 4) {
         taskType = 'ordering'
         taskTitle = `Cooperative Play Sequence: ${theme.title}`
         data = {
           type: 'ordering',
-          prompt: 'Arrange the collaborative play steps in sequence:',
+          prompt: 'Arrange the steps for playing collaboratively in sequence:',
           items: [
-            { id: 'item_1', text: 'Ask politely: "May I join?"', correctOrder: 1 },
-            { id: 'item_2', text: 'Listen kindly to their reply', correctOrder: 2 },
-            { id: 'item_3', text: 'Play happily and take turns', correctOrder: 3 },
+            { id: 'item_1', text: '1. Walk over and ask politely: "May I build with blocks too?"', correctOrder: 1 },
+            { id: 'item_2', text: '2. Listen with care and respect to their answer', correctOrder: 2 },
+            { id: 'item_3', text: '3. Take turns adding blocks gently to the shared tower', correctOrder: 3 },
           ],
-        } as OrderingTaskData
+        }
       } else {
         taskType = 'multiple_choice'
         taskTitle = `Koa's Empathy Mission: ${theme.title}`
         data = {
           type: 'multiple_choice',
-          question: `In this scenario: What is a kind, comfortable choice for ${theme.title}?`,
+          question: 'Koa notices that the school cafeteria has gotten very noisy, and a friend looks overwhelmed and covers their ears. What is a helpful, supportive choice?',
           options: [
-            { id: 'opt_1', text: 'A respectful, kind action offering choice', isCorrect: true },
-            { id: 'opt_2', text: 'Forcing one specific response', isCorrect: false },
-            { id: 'opt_3', text: 'Ignoring how others feel', isCorrect: false },
+            { id: 'opt_1', text: 'Offer noise-cancelling headphones or ask if they want to sit in the quiet corner', isCorrect: true },
+            { id: 'opt_2', text: 'Shout louder next to them so they can hear you', isCorrect: false },
+            { id: 'opt_3', text: 'Tease them for covering their ears', isCorrect: false },
           ],
-          explanation: `Empathetic thinking! ${theme.objective}`,
-        } as MultipleChoiceTaskData
+          explanation: 'Heartwarming empathy! Offering headphones or a quiet spot respects their sensory comfort.',
+        }
       }
     }
 

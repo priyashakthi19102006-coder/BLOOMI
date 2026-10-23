@@ -549,6 +549,121 @@ export const teacherService = {
   },
 
   /**
+   * Enroll a student into an educator's classroom using their registration code.
+   * Validates classroom ownership and student profile exist in the database.
+   */
+  async enrollStudentByRegistrationNumber(
+    teacherId: string,
+    classId: string,
+    registrationNumber: string
+  ): Promise<{ success: boolean; student?: EnrolledStudent; error?: string }> {
+    if (!teacherId || !classId || !registrationNumber.trim()) {
+      return { success: false, error: 'Educator ID, Classroom ID, and Registration Code are required.' }
+    }
+
+    const regUpper = registrationNumber.trim().toUpperCase()
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        // 1. Verify educator owns classroom
+        const { data: classData, error: classErr } = await supabase
+          .from('classes')
+          .select('id, name, class_code, grade_level, teacher_id')
+          .eq('id', classId)
+          .eq('teacher_id', teacherId)
+          .maybeSingle()
+
+        if (classErr || !classData) {
+          return { success: false, error: 'Classroom not found or educator not authorized.' }
+        }
+
+        // 2. Find student by registration code
+        const { data: studentProfile, error: profErr } = await supabase
+          .from('profiles')
+          .select('id, display_name, registration_number, grade_level, avatar_id, role, created_at')
+          .eq('registration_number', regUpper)
+          .maybeSingle()
+
+        if (profErr || !studentProfile) {
+          return {
+            success: false,
+            error: `No learner found with registration code "${regUpper}". Please verify the code.`,
+          }
+        }
+
+        if (studentProfile.role !== 'student') {
+          return { success: false, error: 'The specified registration code does not belong to a student account.' }
+        }
+
+        // 3. Upsert enrollment in class_students
+        const { error: enrollErr } = await supabase
+          .from('class_students')
+          .upsert(
+            { class_id: classId, student_id: studentProfile.id },
+            { onConflict: 'class_id,student_id' }
+          )
+
+        if (enrollErr) {
+          return { success: false, error: `Failed to enroll learner: ${enrollErr.message}` }
+        }
+
+        const enrolledStudent: EnrolledStudent = {
+          id: studentProfile.id,
+          displayName: studentProfile.display_name,
+          registrationNumber: studentProfile.registration_number || regUpper,
+          gradeLevel: studentProfile.grade_level || 3,
+          avatarId: studentProfile.avatar_id || 'panda',
+          className: classData.name,
+          classCode: classData.class_code,
+          teacherId,
+          lastActiveAt: studentProfile.created_at,
+          totalStars: 0,
+          completedLevelsCount: 0,
+          earnedBadgesCount: 0,
+          worldProgress: {
+            writing: { completedLevels: 0, currentLevel: 1 },
+            speaking: { completedLevels: 0, currentLevel: 1 },
+            visual: { completedLevels: 0, currentLevel: 1 },
+            social: { completedLevels: 0, currentLevel: 1 },
+          },
+          supportAccommodations: ['Standard Grade 3 Pacing'],
+          isDemo: false,
+        }
+
+        return { success: true, student: enrolledStudent }
+      } catch (err: any) {
+        return { success: false, error: err.message || 'An unexpected error occurred during enrollment.' }
+      }
+    }
+
+    // Demo environment fallback
+    return {
+      success: true,
+      student: {
+        id: `demo_${regUpper.toLowerCase()}`,
+        displayName: `Learner (${regUpper})`,
+        registrationNumber: regUpper,
+        gradeLevel: 3,
+        avatarId: 'panda',
+        className: 'Grade 3 Blossom Explorers',
+        classCode: 'BLOOM-3A',
+        teacherId,
+        totalStars: 0,
+        completedLevelsCount: 0,
+        earnedBadgesCount: 0,
+        worldProgress: {
+          writing: { completedLevels: 0, currentLevel: 1 },
+          speaking: { completedLevels: 0, currentLevel: 1 },
+          visual: { completedLevels: 0, currentLevel: 1 },
+          social: { completedLevels: 0, currentLevel: 1 },
+        },
+        supportAccommodations: ['Standard Grade 3 Pacing'],
+        isDemo: true,
+      },
+    }
+  },
+
+  /**
    * Retrieve full student learning report.
    * Enforces backend/service authorization boundary.
    */

@@ -194,6 +194,54 @@ serve(async (req: Request) => {
       .update({ avatar_id: sanitizedAvatar })
       .eq("id", authUserId)
 
+    // 5b. Enroll student into classroom join table (class_students)
+    try {
+      let targetClassId: string | null = null
+      const regUpper = sanitizedRegNo
+      const prefix = regUpper.includes("-") ? regUpper.substring(0, regUpper.lastIndexOf("-")) : null
+
+      // Check for explicit classCode or prefix match (e.g. "BLOOMI-3A-01" -> "BLOOMI-3A")
+      const candidateCodes = [
+        typeof body.classCode === "string" ? body.classCode.trim().toUpperCase() : null,
+        regUpper,
+        prefix,
+      ].filter(Boolean) as string[]
+
+      for (const code of candidateCodes) {
+        const { data: matchedClass } = await adminClient
+          .from("classes")
+          .select("id")
+          .ilike("class_code", code)
+          .maybeSingle()
+        if (matchedClass) {
+          targetClassId = matchedClass.id
+          break
+        }
+      }
+
+      // If no code matched, assign to the primary active Grade 3 class
+      if (!targetClassId) {
+        const { data: defaultClass } = await adminClient
+          .from("classes")
+          .select("id")
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle()
+        if (defaultClass) {
+          targetClassId = defaultClass.id
+        }
+      }
+
+      if (targetClassId) {
+        await adminClient.from("class_students").upsert(
+          { class_id: targetClassId, student_id: authUserId },
+          { onConflict: "class_id,student_id" }
+        )
+      }
+    } catch (enrollErr) {
+      console.warn("Class enrollment note during student signup:", enrollErr)
+    }
+
     // 6. Authenticate newly created student via standard Supabase auth
     const { data: authData, error: signInError } = await anonClient.auth.signInWithPassword({
       email: internalEmail,

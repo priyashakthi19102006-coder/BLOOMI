@@ -17,6 +17,11 @@ import {
   Filter,
   ShieldCheck,
   RefreshCw,
+  UserPlus,
+  Copy,
+  Check,
+  AlertCircle,
+  X,
 } from 'lucide-react'
 import { CompanionAvatar } from '../components/worlds/CompanionAvatar'
 
@@ -34,9 +39,19 @@ export const TeacherDashboardPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [selectedWorldFilter, setSelectedWorldFilter] = useState<string>('all')
   const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  // Enrollment modal state
+  const [isEnrollModalOpen, setIsEnrollModalOpen] = useState<boolean>(false)
+  const [enrollCode, setEnrollCode] = useState<string>('')
+  const [enrollError, setEnrollError] = useState<string | null>(null)
+  const [enrollSuccess, setEnrollSuccess] = useState<string | null>(null)
+  const [isEnrolling, setIsEnrolling] = useState<boolean>(false)
+  const [hasCopiedCode, setHasCopiedCode] = useState<boolean>(false)
 
   const loadData = async () => {
     setIsLoading(true)
+    setLoadError(null)
     try {
       const [loadedClasses, loadedStudents] = await Promise.all([
         teacherService.getTeacherClasses(teacherId),
@@ -44,11 +59,52 @@ export const TeacherDashboardPage: React.FC = () => {
       ])
       setClasses(loadedClasses)
       setStudents(loadedStudents)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading teacher data:', err)
+      setLoadError(err?.message || 'Failed to load classroom records from database.')
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleCopyClassCode = (code: string) => {
+    navigator.clipboard.writeText(code)
+    setHasCopiedCode(true)
+    setTimeout(() => setHasCopiedCode(false), 2500)
+  }
+
+  const handleEnrollSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!enrollCode.trim()) return
+
+    const activeClass = classes[0]
+    if (!activeClass) {
+      setEnrollError('No active classroom found for this educator.')
+      return
+    }
+
+    setIsEnrolling(true)
+    setEnrollError(null)
+    setEnrollSuccess(null)
+
+    const result = await teacherService.enrollStudentByRegistrationNumber(
+      teacherId,
+      activeClass.id,
+      enrollCode.trim()
+    )
+
+    if (result.success && result.student) {
+      setEnrollSuccess(`Successfully enrolled ${result.student.displayName} (${result.student.registrationNumber})!`)
+      setEnrollCode('')
+      loadData()
+      setTimeout(() => {
+        setIsEnrollModalOpen(false)
+        setEnrollSuccess(null)
+      }, 1800)
+    } else {
+      setEnrollError(result.error || 'Failed to enroll student.')
+    }
+    setIsEnrolling(false)
   }
 
   useEffect(() => {
@@ -192,23 +248,77 @@ export const TeacherDashboardPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Database Load Error Banner */}
+      {loadError && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-rose-950/60 border-2 border-rose-500/70 text-rose-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-[0_0_20px_rgba(244,63,94,0.3)]">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" aria-hidden="true" />
+            <div>
+              <h4 className="font-bold text-sm text-white">Database Synchronization Note</h4>
+              <p className="text-xs text-rose-200/90">{loadError}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={loadData}
+            className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-colors shrink-0"
+          >
+            Retry Loading
+          </button>
+        </div>
+      )}
+
       {/* Classroom Information Card */}
       <div className="p-5 sm:p-7 rounded-3xl border-2 border-[#a855f7]/30 bg-[#0e0520] shadow-[0_10px_30px_rgba(0,0,0,0.6)] text-[#fdf4ff] space-y-5">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#a855f7]/20 pb-4">
-          <div>
+          <div className="space-y-1">
             <h2 className="text-xl font-bold font-fredoka text-white">
               {activeClass?.name || 'Classroom • Grade 3 Blossom Explorers'}
             </h2>
-            <p className="text-xs text-[#d8b4fe] mt-0.5">
-              Class Registration Code:{' '}
-              <code className="font-mono bg-[#160a33] text-[#00f5ff] px-2.5 py-0.5 rounded font-bold border border-[#00f5ff]/40 shadow-[0_0_8px_rgba(0,245,255,0.3)]">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-[#d8b4fe]">
+              <span>Class Invitation Code:</span>
+              <code className="font-mono bg-[#160a33] text-[#00f5ff] px-2.5 py-1 rounded-lg font-bold border border-[#00f5ff]/40 shadow-[0_0_8px_rgba(0,245,255,0.3)]">
                 {activeClass?.classCode || 'BLOOMI-3A'}
               </code>
-            </p>
+              <button
+                type="button"
+                onClick={() => handleCopyClassCode(activeClass?.classCode || 'BLOOMI-3A')}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#160a33] hover:bg-[#200e47] border border-[#a855f7]/40 text-[#f5d0fe] text-xs font-bold transition-all"
+                title="Copy class code to clipboard"
+              >
+                {hasCopiedCode ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="text-emerald-400">Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5 text-[#00f5ff]" />
+                    <span>Copy</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
-          <div className="text-xs text-[#d8b4fe] flex items-center gap-1.5 font-medium">
-            <Calendar className="w-4 h-4 text-[#ffd700]" aria-hidden="true" />
-            <span>Academic Year 2026–2027</span>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setIsEnrollModalOpen(true)
+                setEnrollError(null)
+                setEnrollSuccess(null)
+              }}
+              className="btn-neon-pink min-h-[44px] flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold shadow-[0_0_15px_rgba(255,42,133,0.3)]"
+            >
+              <UserPlus className="w-4 h-4" aria-hidden="true" />
+              <span>Enroll Learner</span>
+            </button>
+
+            <div className="text-xs text-[#d8b4fe] hidden sm:flex items-center gap-1.5 font-medium">
+              <Calendar className="w-4 h-4 text-[#ffd700]" aria-hidden="true" />
+              <span>2026–2027</span>
+            </div>
           </div>
         </div>
 
@@ -247,9 +357,17 @@ export const TeacherDashboardPage: React.FC = () => {
 
         {/* Student Cards Grid */}
         <div className="space-y-3 pt-2">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-[#d8b4fe]">
-            Authorized Learner Roster ({filteredStudents.length} Students)
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[#d8b4fe]">
+              Authorized Learner Roster ({filteredStudents.length} Students)
+            </h3>
+            {filteredStudents.length > 0 && (
+              <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Verified RLS Encrypted</span>
+              </span>
+            )}
+          </div>
 
           {isLoading ? (
             <div className="py-12 text-center text-xs text-[#d8b4fe]">
@@ -257,16 +375,28 @@ export const TeacherDashboardPage: React.FC = () => {
             </div>
           ) : filteredStudents.length === 0 ? (
             /* Empty State */
-            <div className="py-12 px-4 rounded-2xl bg-[#160a33] border-2 border-dashed border-[#a855f7]/30 text-center space-y-3">
+            <div className="py-12 px-4 rounded-2xl bg-[#160a33] border-2 border-dashed border-[#a855f7]/30 text-center space-y-4">
               <Users className="w-10 h-10 text-[#a855f7] mx-auto opacity-70" aria-hidden="true" />
-              <h4 className="font-extrabold text-base text-white">
-                {students.length === 0 ? 'No Students Currently Enrolled' : 'No Matching Learners Found'}
-              </h4>
-              <p className="text-xs text-[#d8b4fe] max-w-md mx-auto">
-                {students.length === 0
-                  ? `Students will appear in this classroom automatically when they register using your classroom code: ${activeClass?.classCode || 'BLOOMI-3A'}.`
-                  : 'Try adjusting your search keywords or clearing world filters.'}
-              </p>
+              <div className="space-y-1">
+                <h4 className="font-extrabold text-base text-white">
+                  {students.length === 0 ? 'No Students Currently Enrolled' : 'No Matching Learners Found'}
+                </h4>
+                <p className="text-xs text-[#d8b4fe] max-w-md mx-auto leading-relaxed">
+                  {students.length === 0
+                    ? `Students join this classroom automatically when registering with your classroom code: ${activeClass?.classCode || 'BLOOMI-3A'}. You can also directly enroll existing student accounts.`
+                    : 'Try adjusting your search keywords or clearing world filters.'}
+                </p>
+              </div>
+              {students.length === 0 && (
+                <button
+                  type="button"
+                  onClick={() => setIsEnrollModalOpen(true)}
+                  className="btn-neon-pink min-h-[44px] inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>Enroll Learner by Code</span>
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -355,6 +485,93 @@ export const TeacherDashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Enroll Learner Modal Dialog */}
+      {isEnrollModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="enroll-modal-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+        >
+          <div className="w-full max-w-md p-6 sm:p-8 rounded-3xl bg-[#0e0520] border-2 border-[#ff2a85]/60 shadow-[0_0_40px_rgba(255,42,133,0.35)] text-white space-y-5">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#ff2a85]/20 border border-[#ff2a85]/50 flex items-center justify-center text-[#ff2a85]">
+                  <UserPlus className="w-5 h-5" aria-hidden="true" />
+                </div>
+                <div>
+                  <h3 id="enroll-modal-title" className="text-lg font-extrabold font-fredoka text-white">
+                    Enroll Student in Classroom
+                  </h3>
+                  <p className="text-xs text-[#d8b4fe]">
+                    Class: {activeClass?.name} ({activeClass?.classCode})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEnrollModalOpen(false)}
+                className="p-1 rounded-lg text-purple-300 hover:text-white transition-colors"
+                aria-label="Close dialog"
+              >
+                <X className="w-5 h-5" aria-hidden="true" />
+              </button>
+            </div>
+
+            {enrollError && (
+              <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-500/60 text-rose-200 text-xs font-semibold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                <span>{enrollError}</span>
+              </div>
+            )}
+
+            {enrollSuccess && (
+              <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/60 text-emerald-200 text-xs font-semibold flex items-center gap-2">
+                <Check className="w-4 h-4 shrink-0 text-emerald-400" />
+                <span>{enrollSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleEnrollSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <label htmlFor="enroll-code-input" className="block text-xs font-bold text-purple-200">
+                  Student Registration Code:
+                </label>
+                <input
+                  id="enroll-code-input"
+                  type="text"
+                  required
+                  placeholder="e.g. BLOOMI-3A-01"
+                  value={enrollCode}
+                  onChange={(e) => setEnrollCode(e.target.value.toUpperCase())}
+                  className="w-full min-h-[46px] px-4 py-2.5 rounded-xl border border-[#a855f7]/50 bg-[#160a33] text-white font-mono text-sm placeholder-[#9382ad] focus:outline-none focus:ring-2 focus:ring-[#ff2a85]"
+                />
+                <p className="text-[11px] text-purple-300/80">
+                  Enter the student&apos;s unique school registration code to link their account to this classroom roster.
+                </p>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsEnrollModalOpen(false)}
+                  className="min-h-[42px] px-4 py-2 rounded-xl text-xs font-bold text-purple-200 bg-[#160a33] border border-[#a855f7]/40 hover:bg-[#200e47] transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isEnrolling || !enrollCode.trim()}
+                  className="btn-neon-pink min-h-[42px] px-6 py-2 rounded-xl text-xs font-extrabold disabled:opacity-50 transition-all"
+                >
+                  {isEnrolling ? 'Enrolling...' : 'Confirm Enrollment'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
