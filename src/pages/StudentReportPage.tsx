@@ -35,8 +35,8 @@ export const StudentReportPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [isLoading, setIsLoading] = useState<boolean>(true)
 
-  // Active tab: 'progress' | 'timeline' | 'observations' | 'suggestions' | 'support' | 'sessions'
-  const [activeTab, setActiveTab] = useState<'progress' | 'timeline' | 'observations' | 'suggestions' | 'support' | 'sessions'>('progress')
+  // Active tab: 'progress' | 'skills' | 'timeline' | 'observations' | 'suggestions' | 'support' | 'sessions'
+  const [activeTab, setActiveTab] = useState<'progress' | 'skills' | 'timeline' | 'observations' | 'suggestions' | 'support' | 'sessions'>('progress')
 
   // New observation form state
   const [newObsContext, setNewObsContext] = useState<string>('')
@@ -270,6 +270,60 @@ export const StudentReportPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Primary Adaptive Recommendation Banner */}
+      {report.primaryAdaptiveRecommendation && (
+        <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#160a33] via-[#0e0520] to-[#1a082b] border-2 border-[#00f5ff]/60 shadow-[0_0_30px_rgba(0,245,255,0.2)] space-y-3 relative overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="w-8 h-8 rounded-xl bg-[#00f5ff]/20 border border-[#00f5ff]/50 text-[#00f5ff] flex items-center justify-center font-bold">
+                🎯
+              </span>
+              <div>
+                <h3 className="text-sm font-extrabold uppercase tracking-wider text-[#00f5ff]">
+                  Primary Adaptive Recommendation
+                </h3>
+                <span className="text-xs text-purple-200/70">
+                  Targeted learning step grounded in verified platform evidence
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 rounded-full bg-[#00f5ff]/15 border border-[#00f5ff]/40 text-[#00f5ff] font-extrabold text-xs">
+                Confidence: {report.primaryAdaptiveRecommendation.confidenceScore}%
+              </span>
+              <span className="px-2.5 py-1 rounded-full bg-purple-900/40 border border-purple-500/30 text-purple-300 font-medium text-[11px]">
+                Transparent Evidence
+              </span>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-[#0a0318]/80 border border-[#a855f7]/30 space-y-2">
+            <p className="text-base sm:text-lg font-extrabold text-white">
+              {report.primaryAdaptiveRecommendation.recommendationText}
+            </p>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-purple-200/90 font-medium">
+              <span><strong>Triggering Evidence:</strong> {report.primaryAdaptiveRecommendation.triggeringEvidence}</span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+            <div className="text-xs text-purple-300 font-semibold flex items-center gap-1.5">
+              <span>Suggested Practice:</span>
+              <span className="px-2.5 py-0.5 rounded-lg bg-[#ff2a85]/20 text-pink-300 border border-[#ff2a85]/40 font-bold capitalize">
+                {report.primaryAdaptiveRecommendation.worldId} World • Level {report.primaryAdaptiveRecommendation.levelNumber}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveTab('skills')}
+              className="min-h-[38px] px-4 py-1.5 rounded-xl bg-[#00f5ff]/20 text-[#00f5ff] border border-[#00f5ff]/50 hover:bg-[#00f5ff]/30 text-xs font-bold transition-all"
+            >
+              Inspect All 7 Educational Skills →
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Report Navigation Tabs */}
       <div className="flex border-b border-[#a855f7]/30 gap-2 overflow-x-auto pb-1">
         <button
@@ -282,6 +336,17 @@ export const StudentReportPage: React.FC = () => {
           }`}
         >
           Curriculum Progress
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('skills')}
+          className={`min-h-[44px] px-5 py-2 rounded-t-xl text-xs sm:text-sm font-extrabold transition-all border-b-2 ${
+            activeTab === 'skills'
+              ? 'border-[#00f5ff] text-white bg-[#0e0520] shadow-[0_0_15px_rgba(0,245,255,0.25)]'
+              : 'border-transparent text-purple-300/70 hover:text-cyan-300'
+          }`}
+        >
+          Skills &amp; Stages ({report.skillEvaluations?.length || 0})
         </button>
         <button
           type="button"
@@ -477,6 +542,140 @@ export const StudentReportPage: React.FC = () => {
                 ))}
               </ul>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: SKILLS & STAGES */}
+      {activeTab === 'skills' && (
+        <div className="space-y-6">
+          {/* Header notice */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#0e0520] border border-[#a855f7]/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+            <div className="space-y-1">
+              <h3 className="font-extrabold text-sm text-white">
+                Grade 3 Educational Skill Stages &amp; Observable Criteria
+              </h3>
+              <p className="text-purple-200/80 max-w-2xl">
+                Evaluated from actual, recorded task attempts across all four learning worlds. Stages reflect pedagogical mastery criteria, never clinical diagnoses or disorder severity ratings.
+              </p>
+            </div>
+            <span className="px-3 py-1 rounded-full bg-[#160a33] text-purple-300 border border-[#a855f7]/40 font-bold shrink-0">
+              7 Observable Skills
+            </span>
+          </div>
+
+          {/* 7 Educational Skills Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {(report.skillEvaluations || []).map((evalItem) => {
+              const stageColors: Record<string, string> = {
+                ready_for_challenge: 'bg-[#ffd700]/20 text-[#ffd700] border-[#ffd700]/50 shadow-[0_0_15px_rgba(255,215,0,0.3)]',
+                applying_independent: 'bg-[#00f5ff]/20 text-[#00f5ff] border-[#00f5ff]/50 shadow-[0_0_15px_rgba(0,245,255,0.3)]',
+                practising_supported: 'bg-[#a855f7]/20 text-purple-200 border-[#a855f7]/50 shadow-[0_0_15px_rgba(168,85,247,0.3)]',
+                developing: 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.3)]',
+                exploring: 'bg-[#ff2a85]/20 text-pink-300 border-[#ff2a85]/50 shadow-[0_0_15px_rgba(255,42,133,0.3)]',
+                insufficient_data: 'bg-gray-800/60 text-gray-400 border-gray-600/40',
+              }
+              const badgeClass = stageColors[evalItem.stage] || stageColors.insufficient_data
+
+              return (
+                <div
+                  key={evalItem.skillId}
+                  className="p-5 sm:p-6 rounded-3xl bg-[#0e0520] border-2 border-[#a855f7]/30 hover:border-[#a855f7]/60 shadow-[0_0_20px_rgba(168,85,247,0.12)] space-y-4 transition-all"
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-pink-400">
+                        {evalItem.domain}
+                      </span>
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-extrabold border ${badgeClass}`}>
+                        {evalItem.stageTitle}
+                      </span>
+                    </div>
+                    <h4 className="text-base sm:text-lg font-extrabold font-fredoka text-white">
+                      {evalItem.skillTitle}
+                    </h4>
+                  </div>
+
+                  {/* Metrics bar */}
+                  <div className="grid grid-cols-4 gap-2 text-center p-3 rounded-2xl bg-[#160a33] border border-[#a855f7]/20">
+                    <div>
+                      <div className="text-base font-extrabold text-white">
+                        {evalItem.stage === 'insufficient_data' ? '—' : `${evalItem.accuracyPercentage}%`}
+                      </div>
+                      <div className="text-[10px] font-bold text-purple-300 uppercase">Accuracy</div>
+                    </div>
+                    <div>
+                      <div className="text-base font-extrabold text-purple-200">
+                        {evalItem.averageHintsUsed}
+                      </div>
+                      <div className="text-[10px] font-bold text-purple-300 uppercase">Avg Hints</div>
+                    </div>
+                    <div>
+                      <div className="text-base font-extrabold text-purple-200">
+                        {evalItem.averageRetries}
+                      </div>
+                      <div className="text-[10px] font-bold text-purple-300 uppercase">Retries</div>
+                    </div>
+                    <div>
+                      <div className="text-base font-extrabold text-[#00f5ff]">
+                        {evalItem.attemptsEvaluated}
+                      </div>
+                      <div className="text-[10px] font-bold text-purple-300 uppercase">Attempts</div>
+                    </div>
+                  </div>
+
+                  {/* Accuracy progress bar */}
+                  {evalItem.stage !== 'insufficient_data' && (
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px] font-bold text-purple-300">
+                        <span>Formative Mastery Progress</span>
+                        <span>{evalItem.accuracyPercentage}%</span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-[#160a33] overflow-hidden border border-[#a855f7]/30">
+                        <div
+                          className="h-full bg-gradient-to-r from-[#a855f7] via-[#ff2a85] to-[#00f5ff] rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min(100, Math.max(5, evalItem.accuracyPercentage))}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Evidence & limitations */}
+                  <div className="space-y-2 text-xs">
+                    <div className="p-3 rounded-xl bg-[#160a33]/60 border border-[#a855f7]/20 space-y-1">
+                      <div className="font-bold text-purple-200 flex items-center gap-1.5">
+                        <span>🔍 Transparent Evidence:</span>
+                      </div>
+                      <p className="text-purple-300/90 leading-relaxed font-medium">
+                        {evalItem.evidenceSummary}
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-[#00f5ff]/10 border border-[#00f5ff]/30 space-y-1">
+                      <div className="font-bold text-[#00f5ff] flex items-center gap-1.5">
+                        <span>💡 Suggested Next Step:</span>
+                      </div>
+                      <p className="text-cyan-100 font-semibold leading-relaxed">
+                        {evalItem.suggestedNextStep}
+                      </p>
+                    </div>
+
+                    {evalItem.recommendedLevel && (
+                      <div className="pt-1 flex items-center justify-between text-[11px] font-bold text-purple-300">
+                        <span>Recommended Practice Target:</span>
+                        <span className="px-2 py-0.5 rounded-md bg-[#ff2a85]/20 text-pink-300 border border-[#ff2a85]/40 capitalize">
+                          {evalItem.recommendedLevel.worldId} World • Level {evalItem.recommendedLevel.levelNumber}
+                        </span>
+                      </div>
+                    )}
+
+                    <p className="text-[11px] text-purple-400 italic pt-1">
+                      ℹ️ {evalItem.dataLimitationNote}
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

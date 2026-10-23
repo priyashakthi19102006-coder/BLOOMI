@@ -10,6 +10,7 @@ import type {
   OrderingTaskData,
   LetterInputTaskData,
 } from '../../types/curriculum.types'
+import { skillFrameworkService } from '../../services/skillFramework.service'
 
 // Band categorization helper
 export function getBandForLevel(levelNumber: number): {
@@ -266,21 +267,37 @@ function generateTasksForLevel(
   theme: { title: string; objective: string }
 ): CurriculumTask[] {
   const levelId = `level_${worldId}_${levelNumber}`
+  const bandInfo = getBandForLevel(levelNumber)
+  const difficultyLevel =
+    bandInfo.band === 'explore'
+      ? 1
+      : bandInfo.band === 'connect'
+      ? 2
+      : bandInfo.band === 'build'
+      ? 3
+      : bandInfo.band === 'apply'
+      ? 4
+      : 5
 
   const tasks: CurriculumTask[] = []
 
   for (let taskNum = 1; taskNum <= 5; taskNum++) {
     const taskId = `task_${worldId}_${levelNumber}_${taskNum}`
     let taskType: TaskType = 'multiple_choice'
+    let taskTitle = `Task ${taskNum}: ${theme.title}`
     let data: any
 
-    // Alternate task types based on taskNum and world to ensure rich variety
+    // Alternate task types based on taskNum and world to ensure rich, world-specific variety
     if (worldId === 'writing') {
       if (taskNum === 1 || taskNum === 5) {
         taskType = 'multiple_choice'
+        taskTitle =
+          taskNum === 1
+            ? `Barnaby's Letter Track: ${theme.title}`
+            : `Carnival Marquee Quest: ${theme.title}`
         data = {
           type: 'multiple_choice',
-          question: `Which choice matches the target sound or letter in ${theme.title}?`,
+          question: `Which letter or sound card completes the roller coaster track for ${theme.title}?`,
           options: [
             { id: 'opt_1', text: `Primary choice for ${theme.title}`, isCorrect: true },
             { id: 'opt_2', text: 'Alternative letter pattern', isCorrect: false },
@@ -290,30 +307,33 @@ function generateTasksForLevel(
         } as MultipleChoiceTaskData
       } else if (taskNum === 2) {
         taskType = 'matching'
+        taskTitle = `Ferris Wheel Sound Match: ${theme.title}`
         data = {
           type: 'matching',
-          prompt: `Match the letters or word parts in ${theme.title}:`,
+          prompt: `Match the coaster cars with matching sounds in ${theme.title}:`,
           pairs: [
-            { id: 'pair_1', left: 'Part A', right: 'Sound Match A' },
-            { id: 'pair_2', left: 'Part B', right: 'Sound Match B' },
+            { id: 'pair_1', left: `Letter Card (${theme.title.slice(0, 10)})`, right: 'Sound Match A' },
+            { id: 'pair_2', left: 'Word Ending Partner', right: 'Sound Match B' },
           ],
         } as MatchingTaskData
       } else if (taskNum === 3) {
         taskType = 'ordering'
+        taskTitle = `Carnival Word Train: ${theme.title}`
         data = {
           type: 'ordering',
-          prompt: 'Arrange the word tiles into the correct sequence:',
+          prompt: 'Arrange the word cars in correct spelling order:',
           items: [
-            { id: 'item_1', text: 'Word Start', correctOrder: 1 },
-            { id: 'item_2', text: 'Middle Sound', correctOrder: 2 },
-            { id: 'item_3', text: 'Ending Letter', correctOrder: 3 },
+            { id: 'item_1', text: 'Starting Letter', correctOrder: 1 },
+            { id: 'item_2', text: 'Vowel Center', correctOrder: 2 },
+            { id: 'item_3', text: 'Ending Sound', correctOrder: 3 },
           ],
         } as OrderingTaskData
       } else {
         taskType = 'letter_input'
+        taskTitle = `Ticket Booth Letter Forge: ${theme.title}`
         data = {
           type: 'letter_input',
-          prompt: `Type or select the missing letter for ${theme.title}:`,
+          prompt: `Type or select the missing letter for the ride ticket in ${theme.title}:`,
           wordWithBlank: 'b_d',
           expectedLetter: 'e',
           acceptableAlternatives: ['E'],
@@ -322,30 +342,47 @@ function generateTasksForLevel(
     } else if (worldId === 'speaking') {
       if (taskNum === 2 || taskNum === 4) {
         taskType = 'matching'
+        taskTitle =
+          taskNum === 2
+            ? `Chef Pip's Recipe Sounds: ${theme.title}`
+            : `AAC Kitchen Picture Board: ${theme.title}`
         data = {
           type: 'matching',
-          prompt: `Listen and match the sounds with their visual cues:`,
+          prompt:
+            taskNum === 2
+              ? `Listen and match the culinary sounds with recipe ingredients:`
+              : `Match the picture communication card with the cooking action:`,
           pairs: [
-            { id: 'pair_1', left: 'Echo Clue 1', right: 'Picture Meaning 1' },
-            { id: 'pair_2', left: 'Echo Clue 2', right: 'Picture Meaning 2' },
+            {
+              id: 'pair_1',
+              left: taskNum === 2 ? 'Whisking Batter' : 'Card: "More Strawberries"',
+              right: taskNum === 2 ? 'Sweet Cake Flour' : 'Add fresh fruit to bowl',
+            },
+            {
+              id: 'pair_2',
+              left: taskNum === 2 ? 'Oven Timer Bell' : 'Card: "All Done"',
+              right: taskNum === 2 ? 'Golden Loaf Ready' : 'Baking step complete',
+            },
           ],
         } as MatchingTaskData
       } else if (taskNum === 3) {
         taskType = 'ordering'
+        taskTitle = `Recipe Step Sequencing: ${theme.title}`
         data = {
           type: 'ordering',
-          prompt: 'Arrange the auditory sequence in the order you hear it:',
+          prompt: 'Arrange the baking recipe steps in chronological order:',
           items: [
-            { id: 'item_1', text: 'First Sound', correctOrder: 1 },
-            { id: 'item_2', text: 'Second Sound', correctOrder: 2 },
-            { id: 'item_3', text: 'Third Sound', correctOrder: 3 },
+            { id: 'item_1', text: 'Gather recipe ingredients', correctOrder: 1 },
+            { id: 'item_2', text: 'Mix together in bowl', correctOrder: 2 },
+            { id: 'item_3', text: 'Bake in magic oven', correctOrder: 3 },
           ],
         } as OrderingTaskData
       } else {
         taskType = 'multiple_choice'
+        taskTitle = `Magical Cafe Order: ${theme.title}`
         data = {
           type: 'multiple_choice',
-          question: `Listen carefully: What does the speaker describe in ${theme.title}?`,
+          question: `Listen carefully: What does the customer order in ${theme.title}?`,
           options: [
             { id: 'opt_1', text: 'The accurate spoken word or sound', isCorrect: true },
             { id: 'opt_2', text: 'A different pitch or word', isCorrect: false },
@@ -357,30 +394,36 @@ function generateTasksForLevel(
     } else if (worldId === 'visual') {
       if (taskNum === 1 || taskNum === 3) {
         taskType = 'matching'
+        taskTitle =
+          taskNum === 1
+            ? `Nova's Constellation Match: ${theme.title}`
+            : `Space Station Visual Matrix: ${theme.title}`
         data = {
           type: 'matching',
-          prompt: `Match the shapes, patterns, or scenes for ${theme.title}:`,
+          prompt: `Match the star patterns and symmetrical cosmic shapes for ${theme.title}:`,
           pairs: [
-            { id: 'pair_1', left: 'Pattern Left A', right: 'Pattern Right A' },
-            { id: 'pair_2', left: 'Pattern Left B', right: 'Pattern Right B' },
+            { id: 'pair_1', left: 'Star Pattern Alpha', right: 'Constellation Alpha' },
+            { id: 'pair_2', left: 'Orbit Geometry Beta', right: 'Constellation Beta' },
           ],
         } as MatchingTaskData
       } else if (taskNum === 2) {
         taskType = 'ordering'
+        taskTitle = `Planet Mission Orbit Sequence: ${theme.title}`
         data = {
           type: 'ordering',
-          prompt: `Arrange the visual pattern in correct sequential order:`,
+          prompt: 'Arrange the planetary exploration stages in sequence:',
           items: [
-            { id: 'item_1', text: 'Step 1 (Early)', correctOrder: 1 },
-            { id: 'item_2', text: 'Step 2 (Middle)', correctOrder: 2 },
-            { id: 'item_3', text: 'Step 3 (Final)', correctOrder: 3 },
+            { id: 'item_1', text: 'Stage 1: Launch from station', correctOrder: 1 },
+            { id: 'item_2', text: 'Stage 2: Lunar orbit scan', correctOrder: 2 },
+            { id: 'item_3', text: 'Stage 3: Nebula touchdown', correctOrder: 3 },
           ],
         } as OrderingTaskData
       } else {
         taskType = 'multiple_choice'
+        taskTitle = `Alien Guide Telescope Quest: ${theme.title}`
         data = {
           type: 'multiple_choice',
-          question: `Which visual piece completes the puzzle in ${theme.title}?`,
+          question: `Which visual piece completes the starry pattern in ${theme.title}?`,
           options: [
             { id: 'opt_1', text: 'Matching symmetry or pattern piece', isCorrect: true },
             { id: 'opt_2', text: 'Incorrect orientation', isCorrect: false },
@@ -390,30 +433,33 @@ function generateTasksForLevel(
         } as MultipleChoiceTaskData
       }
     } else {
-      // Social Adventure
+      // Social Adventure (Magic Animal World)
       if (taskNum === 2) {
         taskType = 'matching'
+        taskTitle = `Sanctuary Kindness Pairs: ${theme.title}`
         data = {
           type: 'matching',
-          prompt: `Connect the feeling or situation with a kind response:`,
+          prompt: 'Connect the feeling or situation with a kind, respectful response:',
           pairs: [
-            { id: 'pair_1', left: 'Friend feeling tired', right: 'Offer quiet space' },
+            { id: 'pair_1', left: 'Friend feeling tired or crowded', right: 'Offer quiet space' },
             { id: 'pair_2', left: 'Excited about a game', right: 'Cheer and share joy' },
           ],
         } as MatchingTaskData
       } else if (taskNum === 4) {
         taskType = 'ordering'
+        taskTitle = `Cooperative Play Sequence: ${theme.title}`
         data = {
           type: 'ordering',
-          prompt: `Arrange the collaborative steps in order:`,
+          prompt: 'Arrange the collaborative play steps in sequence:',
           items: [
-            { id: 'item_1', text: 'Ask politely', correctOrder: 1 },
-            { id: 'item_2', text: 'Listen to the answer', correctOrder: 2 },
-            { id: 'item_3', text: 'Play happily together', correctOrder: 3 },
+            { id: 'item_1', text: 'Ask politely: "May I join?"', correctOrder: 1 },
+            { id: 'item_2', text: 'Listen kindly to their reply', correctOrder: 2 },
+            { id: 'item_3', text: 'Play happily and take turns', correctOrder: 3 },
           ],
         } as OrderingTaskData
       } else {
         taskType = 'multiple_choice'
+        taskTitle = `Koa's Empathy Mission: ${theme.title}`
         data = {
           type: 'multiple_choice',
           question: `In this scenario: What is a kind, comfortable choice for ${theme.title}?`,
@@ -446,26 +492,42 @@ function generateTasksForLevel(
       social: {
         domain: 'Social Understanding & Animals',
         companion: 'Koa the Explorer Panda',
-        methodList: ['Emotion Card', 'Scenario Matching', 'Visual Empathy Cue'],
+        methodList: ['Emotion Card', 'Scenario Matching', 'Visual Empathy Cue', 'AAC Reset'],
       },
     }
 
     const worldSkill = worldSkillMap[worldId]
+    const targetSkillId = skillFrameworkService.inferSkillFromTask(worldId, levelNumber, taskType)
 
     tasks.push({
       id: taskId,
       levelId,
       taskNumber: taskNum,
-      title: `Task ${taskNum}: ${theme.title}`,
+      title: taskTitle,
       instruction: `Explore step ${taskNum} of 5: ${theme.objective}`,
       taskType,
       data,
+      targetSkillId,
+      skillDifficulty: difficultyLevel,
       hint: `Hint for Level ${levelNumber}, Task ${taskNum}: Take your time! Tap, listen, or think about ${theme.objective.toLowerCase()}`,
       visualDemonstration: `Look closely at the clues for ${theme.title}. Choose the option that fits best!`,
       spokenInstruction: `Step ${taskNum}. ${theme.objective}. Take your time and tap your answer when you are ready.`,
+      audioPromptText: `${taskTitle}. ${theme.objective}. Take your time.`,
+      pictureChoiceSupported: true,
+      aacStyleSupported: worldId === 'social' || worldId === 'speaking',
+      scoringRubric:
+        'Full mastery awarded for independently matching or ordering target educational criteria. Multiple retries permitted without penalty.',
       supportedResponseMethods: worldSkill.methodList,
       skillsPracticed: [worldSkill.domain, 'Everyday Learning Focus'],
       encouragementTip: `${worldSkill.companion} says: You are doing great exploring this level!`,
+      accommodationsAvailable: [
+        'Read-Aloud TTS with replay',
+        'Untimed practice & breaks',
+        'Calm sensory mode with reduced motion',
+        'Visual demonstration cards',
+        'Picture-supported choices (AAC)',
+        'Zero forced speech or eye contact',
+      ],
     })
   }
 

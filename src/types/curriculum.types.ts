@@ -64,6 +64,57 @@ export type TaskData =
   | OrderingTaskData
   | LetterInputTaskData
 
+export type EducationalSkillId =
+  | 'letter_recognition'
+  | 'phonological_awareness'
+  | 'word_decoding'
+  | 'vocabulary_sentence'
+  | 'listening_comprehension'
+  | 'visual_pattern_planning'
+  | 'functional_communication'
+
+export type SkillStage =
+  | 'exploring'
+  | 'developing'
+  | 'practising_supported'
+  | 'applying_independent'
+  | 'ready_for_challenge'
+  | 'insufficient_data'
+
+export interface EducationalSkillDefinition {
+  id: EducationalSkillId
+  title: string
+  domain: string
+  description: string
+  observableCriteria: string
+  gradeTarget: number
+  worldId: WorldId
+  sampleActivity: string
+}
+
+export interface StudentSkillStageEvaluation {
+  skillId: EducationalSkillId
+  skillTitle: string
+  domain: string
+  stage: SkillStage
+  stageTitle: string
+  confidenceScore: number
+  attemptsEvaluated: number
+  accuracyPercentage: number
+  averageHintsUsed: number
+  averageRetries: number
+  evidenceSummary: string
+  dataLimitationNote: string
+  suggestedNextStep: string
+  recommendedLevel?: { worldId: WorldId; levelNumber: number; title: string }
+  teacherOverride?: {
+    stage: SkillStage
+    overriddenBy: string
+    overrideDate: string
+    rationale: string
+  }
+}
+
 export interface CurriculumTask {
   id: string
   levelId: string
@@ -72,12 +123,19 @@ export interface CurriculumTask {
   instruction: string
   taskType: TaskType
   data: TaskData
+  targetSkillId?: EducationalSkillId
+  skillDifficulty?: number // 1 to 5
   hint?: string
   visualDemonstration?: string
   spokenInstruction?: string
+  audioPromptText?: string
+  pictureChoiceSupported?: boolean
+  aacStyleSupported?: boolean
+  scoringRubric?: string
   supportedResponseMethods?: string[]
   skillsPracticed?: string[]
   encouragementTip?: string
+  accommodationsAvailable?: string[]
 }
 
 export interface CurriculumLevel {

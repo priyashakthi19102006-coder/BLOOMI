@@ -214,7 +214,7 @@ export const TaskPlayer: React.FC<TaskPlayerProps> = ({
     }
 
     window.speechSynthesis.cancel()
-    const textToSpeak = task.spokenInstruction || task.instruction
+    const textToSpeak = task.audioPromptText || task.spokenInstruction || task.instruction
     const utterance = new SpeechSynthesisUtterance(textToSpeak)
     utterance.rate = 0.9 // gentle, clear pace for Grade 3 learners
     utterance.onstart = () => setIsSpeaking(true)
@@ -583,6 +583,18 @@ export const TaskPlayer: React.FC<TaskPlayerProps> = ({
                 <p className="text-xs sm:text-sm font-medium text-cyan-200/90">
                   {detailedExplanation}
                 </p>
+              )}
+
+              {isCorrect ? (
+                <div className="p-2.5 rounded-xl bg-[#00f5ff]/10 border border-[#00f5ff]/30 text-xs font-semibold text-cyan-200 flex items-center gap-2">
+                  <span className="text-sm">🌟</span>
+                  <span>Companion Cheer: Fantastic effort and strategy! Your hard work is blooming.</span>
+                </div>
+              ) : (
+                <div className="p-2.5 rounded-xl bg-[#ff2a85]/10 border border-[#ff2a85]/30 text-xs font-semibold text-pink-200 flex items-center gap-2">
+                  <span className="text-sm">🌱</span>
+                  <span>Companion Cheer: Every attempt builds your learning pathway! Take your time, try a hint if helpful, and try again.</span>
+                </div>
               )}
 
               <div className="pt-2 flex flex-wrap gap-3">
