@@ -1,7 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate, useOutletContext } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { progressionService } from '../services/progression.service'
+import { sessionTrackingService } from '../services/sessionTracking.service'
 import { curriculumService, curriculumWorlds } from '../data/curriculum/curriculumGenerator'
 import { BadgeCard } from '../components/BadgeCard'
 import type { AccessibilityContextType } from '../layouts/RootLayout'
@@ -128,6 +129,10 @@ export const StudentHubPage: React.FC = () => {
   const socialSummary = progressionService.getWorldSummary('social', progress)
 
   const resumeTarget = calculateResumeTarget(progress)
+
+  useEffect(() => {
+    sessionTrackingService.setActivityMode('portal')
+  }, [])
 
   const handleSignOut = async () => {
     await logout()

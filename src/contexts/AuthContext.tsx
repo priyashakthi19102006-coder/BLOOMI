@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useMemo } from '
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { authService } from '../services/auth.service'
+import { sessionTrackingService } from '../services/sessionTracking.service'
 import type { Profile } from '../types/database.types'
 
 interface AuthContextValue {
@@ -62,6 +63,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const userProfile = await authService.getProfile(data.session.user.id)
             if (isMounted && userProfile) {
               setProfile(userProfile)
+              if (userProfile.role === 'student') {
+                void sessionTrackingService.startSession(userProfile.id)
+              }
             }
           }
         }
@@ -130,6 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       )
       setSession(newSession)
       setProfile(studentProfile)
+      void sessionTrackingService.startSession(studentProfile.id)
     } catch (err: any) {
       const msg = err.message || 'Failed to authenticate student.'
       setError(msg)
@@ -156,6 +161,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       )
       setSession(newSession)
       setProfile(studentProfile)
+      void sessionTrackingService.startSession(studentProfile.id)
     } catch (err: any) {
       const msg = err.message || 'Failed to register student account.'
       setError(msg)
@@ -226,6 +232,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true)
     setError(null)
     try {
+      await sessionTrackingService.endSession('completed')
       await authService.signOut()
       setSession(null)
       setProfile(null)

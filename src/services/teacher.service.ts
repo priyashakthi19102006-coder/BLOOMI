@@ -7,6 +7,7 @@ import type {
 import { progressionService } from './progression.service'
 import { curriculumService } from '../data/curriculum/curriculumGenerator'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import type { StudentSessionRecord, StudentTaskAttemptRecord } from '../types/database.types'
 
 export interface EnrolledStudent {
   id: string
@@ -86,6 +87,8 @@ export interface StudentLearningReport {
   observations: TeacherObservation[]
   suggestions: SupportSuggestion[]
   supportRecords: SensitiveSupportRecord[]
+  sessions: StudentSessionRecord[]
+  taskAttempts: StudentTaskAttemptRecord[]
 }
 
 const DEMO_TEACHER_ID = 'demo_teacher_id'
@@ -642,6 +645,29 @@ export const teacherService = {
     // Retrieve sensitive support records (accommodations, IEP notes)
     const supportRecords = this.getSensitiveSupportRecords(teacherId, studentId)
 
+    // Retrieve authentic session history and granular task attempts
+    let sessions: StudentSessionRecord[] = []
+    let taskAttempts: StudentTaskAttemptRecord[] = []
+    if (isSupabaseConfigured && supabase && studentId !== 'demo_student') {
+      try {
+        const { data: sessData } = await (supabase.from('student_sessions') as any)
+          .select('*')
+          .eq('student_id', studentId)
+          .order('session_start', { ascending: false })
+          .limit(30)
+        if (sessData) sessions = sessData
+
+        const { data: attData } = await (supabase.from('student_task_attempts') as any)
+          .select('*')
+          .eq('student_id', studentId)
+          .order('created_at', { ascending: false })
+          .limit(50)
+        if (attData) taskAttempts = attData
+      } catch (err) {
+        console.warn('Session history load note:', err)
+      }
+    }
+
     return {
       authorized: true,
       report: {
@@ -655,6 +681,8 @@ export const teacherService = {
         observations,
         suggestions,
         supportRecords,
+        sessions,
+        taskAttempts,
       },
     }
   },

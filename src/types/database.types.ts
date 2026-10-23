@@ -270,6 +270,142 @@ export interface Database {
           }
         ]
       }
+      student_sessions: {
+        Row: {
+          id: string
+          student_id: string
+          session_start: string
+          last_activity_at: string
+          session_end: string | null
+          duration_seconds: number
+          portal_seconds: number
+          active_learning_seconds: number
+          status: 'active' | 'completed' | 'interrupted' | 'idle_timeout'
+          device_info: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          session_start?: string
+          last_activity_at?: string
+          session_end?: string | null
+          duration_seconds?: number
+          portal_seconds?: number
+          active_learning_seconds?: number
+          status?: 'active' | 'completed' | 'interrupted' | 'idle_timeout'
+          device_info?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          session_start?: string
+          last_activity_at?: string
+          session_end?: string | null
+          duration_seconds?: number
+          portal_seconds?: number
+          active_learning_seconds?: number
+          status?: 'active' | 'completed' | 'interrupted' | 'idle_timeout'
+          device_info?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_sessions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      student_task_attempts: {
+        Row: {
+          id: string
+          student_id: string
+          session_id: string | null
+          world_id: 'writing' | 'speaking' | 'visual' | 'social'
+          level_number: number
+          task_id: string
+          task_type: string
+          is_correct: boolean
+          attempts_count: number
+          hints_used: number
+          response_method: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          session_id?: string | null
+          world_id: 'writing' | 'speaking' | 'visual' | 'social'
+          level_number: number
+          task_id: string
+          task_type: string
+          is_correct?: boolean
+          attempts_count?: number
+          hints_used?: number
+          response_method?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          session_id?: string | null
+          world_id?: 'writing' | 'speaking' | 'visual' | 'social'
+          level_number?: number
+          task_id?: string
+          task_type?: string
+          is_correct?: boolean
+          attempts_count?: number
+          hints_used?: number
+          response_method?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_task_attempts_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      teacher_invitations: {
+        Row: {
+          id: string
+          invitation_code: string
+          school_name: string
+          used_by: string | null
+          used_at: string | null
+          expires_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          invitation_code: string
+          school_name: string
+          used_by?: string | null
+          used_at?: string | null
+          expires_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          invitation_code?: string
+          school_name?: string
+          used_by?: string | null
+          used_at?: string | null
+          expires_at?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -289,3 +425,6 @@ export interface Database {
 export type Profile = Database['public']['Tables']['profiles']['Row']
 export type ClassRecord = Database['public']['Tables']['classes']['Row']
 export type ClassStudentRecord = Database['public']['Tables']['class_students']['Row']
+export type StudentSessionRecord = Database['public']['Tables']['student_sessions']['Row']
+export type StudentTaskAttemptRecord = Database['public']['Tables']['student_task_attempts']['Row']
+export type TeacherInvitationRecord = Database['public']['Tables']['teacher_invitations']['Row']

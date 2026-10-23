@@ -34,8 +34,8 @@ export const StudentReportPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [isLoading, setIsLoading] = useState<boolean>(true)
 
-  // Active tab: 'progress' | 'timeline' | 'observations' | 'suggestions' | 'support'
-  const [activeTab, setActiveTab] = useState<'progress' | 'timeline' | 'observations' | 'suggestions' | 'support'>('progress')
+  // Active tab: 'progress' | 'timeline' | 'observations' | 'suggestions' | 'support' | 'sessions'
+  const [activeTab, setActiveTab] = useState<'progress' | 'timeline' | 'observations' | 'suggestions' | 'support' | 'sessions'>('progress')
 
   // New observation form state
   const [newObsContext, setNewObsContext] = useState<string>('')
@@ -163,7 +163,7 @@ export const StudentReportPage: React.FC = () => {
     )
   }
 
-  const { student, worldSummaries, rewardSummary, demonstratedSuccesses, areasForGrowth, timeline, observations, suggestions, supportRecords = [] } = report
+  const { student, worldSummaries, rewardSummary, demonstratedSuccesses, areasForGrowth, timeline, observations, suggestions, supportRecords = [], sessions = [] } = report
 
   const avatarMap: Record<string, string> = {
     lion: '🦁',
@@ -334,6 +334,17 @@ export const StudentReportPage: React.FC = () => {
           }`}
         >
           Protected Support Records ({supportRecords.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('sessions')}
+          className={`min-h-[44px] px-5 py-2 rounded-t-xl text-xs sm:text-sm font-extrabold transition-all border-b-2 ${
+            activeTab === 'sessions'
+              ? 'border-[#ff2a85] text-white bg-[#0e0520] shadow-[0_0_15px_rgba(255,42,133,0.2)]'
+              : 'border-transparent text-purple-300/70 hover:text-pink-300'
+          }`}
+        >
+          Sessions &amp; Engagement ({sessions.length})
         </button>
       </div>
 
@@ -868,6 +879,128 @@ export const StudentReportPage: React.FC = () => {
                   </div>
                 </div>
               ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 6: AUTHENTIC SESSION & ENGAGEMENT HISTORY */}
+      {activeTab === 'sessions' && (
+        <div className="space-y-6">
+          {/* Quick Metrics */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="p-4 rounded-2xl bg-[#0e0520] border-2 border-[#00f5ff]/40 shadow-xs space-y-1">
+              <span className="text-xs font-bold text-cyan-200">Total Authenticated Sessions</span>
+              <div className="text-2xl font-extrabold font-fredoka text-white">{sessions.length}</div>
+              <p className="text-[11px] text-purple-200/80">Tracked with server-validated timestamps</p>
+            </div>
+            <div className="p-4 rounded-2xl bg-[#0e0520] border-2 border-[#ff2a85]/40 shadow-xs space-y-1">
+              <span className="text-xs font-bold text-pink-300">Active Task Learning Time</span>
+              <div className="text-2xl font-extrabold font-fredoka text-white">
+                {Math.round(sessions.reduce((acc, s) => acc + (s.active_learning_seconds || 0), 0) / 60)} mins
+              </div>
+              <p className="text-[11px] text-purple-200/80">Direct interaction with adventure challenges</p>
+            </div>
+            <div className="p-4 rounded-2xl bg-[#0e0520] border-2 border-[#ffd700]/40 shadow-xs space-y-1">
+              <span className="text-xs font-bold text-amber-300">Portal &amp; Navigation Time</span>
+              <div className="text-2xl font-extrabold font-fredoka text-white">
+                {Math.round(sessions.reduce((acc, s) => acc + (s.portal_seconds || 0), 0) / 60)} mins
+              </div>
+              <p className="text-[11px] text-purple-200/80">Kingdom exploration and map navigation</p>
+            </div>
+          </div>
+
+          {/* Session Log Table */}
+          <div className="bg-[#0e0520] rounded-3xl p-6 sm:p-8 border-2 border-[#a855f7]/30 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-[#a855f7]/20 pb-3">
+              <h3 className="text-base font-extrabold font-fredoka text-white">
+                Recorded Session Events &amp; Disconnect Log
+              </h3>
+              <span className="text-xs text-purple-300 font-semibold font-mono">
+                {sessions.length} Logged Session(s)
+              </span>
+            </div>
+
+            {sessions.length === 0 ? (
+              <div className="py-12 text-center text-xs text-purple-300/70">
+                No session records recorded yet for this learner. Sessions record automatically upon sign-in.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead className="bg-[#160a33] text-purple-200 uppercase text-[11px] font-extrabold border-b border-[#a855f7]/30">
+                    <tr>
+                      <th className="py-3 px-4">Start Time</th>
+                      <th className="py-3 px-4">Last Activity</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4">Active Learning</th>
+                      <th className="py-3 px-4">Portal Time</th>
+                      <th className="py-3 px-4">Total Duration</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#a855f7]/15 font-medium text-white">
+                    {sessions.map((sess) => {
+                      const isCompleted = sess.status === 'completed'
+                      const isInterrupted = sess.status === 'interrupted'
+                      const isIdle = sess.status === 'idle_timeout'
+
+                      return (
+                        <tr key={sess.id} className="hover:bg-[#160a33]/60 transition-colors">
+                          <td className="py-3 px-4 font-mono text-xs text-purple-300">
+                            {new Date(sess.session_start).toLocaleString(undefined, {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </td>
+                          <td className="py-3 px-4 font-mono text-xs text-purple-300">
+                            {sess.session_end
+                              ? new Date(sess.session_end).toLocaleTimeString(undefined, {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : new Date(sess.last_activity_at).toLocaleTimeString(undefined, {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span
+                              className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border ${
+                                isCompleted
+                                  ? 'bg-[#00f5ff]/20 text-[#00f5ff] border-[#00f5ff]/50'
+                                  : isInterrupted
+                                  ? 'bg-[#ffd700]/20 text-[#ffd700] border-[#ffd700]/50'
+                                  : isIdle
+                                  ? 'bg-purple-900/40 text-purple-300 border-purple-500/40'
+                                  : 'bg-[#ff2a85]/20 text-pink-300 border-[#ff2a85]/50'
+                              }`}
+                            >
+                              {isCompleted
+                                ? 'Explicit Logout'
+                                : isInterrupted
+                                ? 'Interrupted / Tab Closed'
+                                : isIdle
+                                ? 'Idle Timeout'
+                                : 'Active Session'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-[#00f5ff] font-bold">
+                            {Math.round(sess.active_learning_seconds / 60)} min {sess.active_learning_seconds % 60}s
+                          </td>
+                          <td className="py-3 px-4 text-purple-200">
+                            {Math.round(sess.portal_seconds / 60)} min {sess.portal_seconds % 60}s
+                          </td>
+                          <td className="py-3 px-4 font-mono text-xs text-white">
+                            {Math.round(sess.duration_seconds / 60)} min {sess.duration_seconds % 60}s
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>

@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate, useOutletContext } from 'react-router-dom
 import { ArrowLeft, Star, RefreshCw, CloudCheck, HardDrive, Sparkles } from 'lucide-react'
 import { curriculumService } from '../data/curriculum/curriculumGenerator'
 import { progressionService } from '../services/progression.service'
+import { sessionTrackingService } from '../services/sessionTracking.service'
 import { TaskPlayer } from '../components/TaskPlayer'
 import { WorldScene } from '../components/worlds/WorldScene'
 import { CompanionAvatar } from '../components/worlds/CompanionAvatar'
@@ -63,6 +64,14 @@ export const LevelPlayerPage: React.FC = () => {
     }
   }, [parsedWorldId, parsedLevelNum, studentId, level])
 
+  // Set active learning session mode while on the level player page
+  useEffect(() => {
+    sessionTrackingService.setActivityMode('learning')
+    return () => {
+      sessionTrackingService.setActivityMode('portal')
+    }
+  }, [])
+
   if (!level) {
     return (
       <div className="max-w-2xl mx-auto py-16 text-center space-y-4">
@@ -90,6 +99,21 @@ export const LevelPlayerPage: React.FC = () => {
     )
 
     setCompletedTaskIds(recordResult.completedTaskIds)
+
+    // Log granular task attempt to database if authenticated
+    if (studentId && studentId !== 'demo_student') {
+      void sessionTrackingService.recordTaskAttempt({
+        student_id: studentId,
+        world_id: parsedWorldId,
+        level_number: parsedLevelNum,
+        task_id: taskId,
+        task_type: currentTask?.data?.type || 'multiple_choice',
+        is_correct: true,
+        score: 100,
+        hints_used: 0,
+        retry_count: 0,
+      })
+    }
 
     if (currentTaskIndex + 1 < level.tasks.length) {
       setCurrentTaskIndex((prev) => prev + 1)
