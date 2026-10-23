@@ -60,7 +60,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(data.session)
           if (data.session?.user) {
             const userProfile = await authService.getProfile(data.session.user.id)
-            if (isMounted) setProfile(userProfile)
+            if (isMounted && userProfile) {
+              setProfile(userProfile)
+            }
           }
         }
       } catch (err: any) {
@@ -79,7 +81,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(newSession)
       if (newSession?.user) {
         const userProfile = await authService.getProfile(newSession.user.id)
-        if (isMounted) setProfile(userProfile)
+        if (isMounted) {
+          if (userProfile) {
+            setProfile(userProfile)
+          } else {
+            // Keep existing profile if it belongs to the same user
+            setProfile((prev) => (prev && prev.id === newSession.user.id ? prev : null))
+          }
+        }
       } else {
         if (isMounted) setProfile(null)
       }

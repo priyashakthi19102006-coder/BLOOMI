@@ -223,6 +223,53 @@ export interface Database {
           }
         ]
       }
+      sensitive_support_records: {
+        Row: {
+          id: string
+          student_id: string
+          documented_by: string
+          recorded_at: string
+          lawful_basis: string
+          category: string
+          details: string
+          review_date: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          documented_by: string
+          recorded_at?: string
+          lawful_basis: string
+          category: string
+          details: string
+          review_date: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          documented_by?: string
+          recorded_at?: string
+          lawful_basis?: string
+          category?: string
+          details?: string
+          review_date?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sensitive_support_records_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

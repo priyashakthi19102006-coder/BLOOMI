@@ -4,6 +4,7 @@ import { ArrowLeft, Star, RefreshCw, CloudCheck, HardDrive } from 'lucide-react'
 import { curriculumService } from '../data/curriculum/curriculumGenerator'
 import { progressionService } from '../services/progression.service'
 import { TaskPlayer } from '../components/TaskPlayer'
+import { CompanionAvatar } from '../components/worlds/CompanionAvatar'
 import { useAuth } from '../contexts/AuthContext'
 import type { AccessibilityContextType } from '../layouts/RootLayout'
 import type { WorldId, BadgeDefinition } from '../types/curriculum.types'
@@ -232,8 +233,8 @@ export const LevelPlayerPage: React.FC = () => {
               : 'bg-white border-[#B2E6CE] text-[#24483D]'
           }`}
         >
-          <div className="w-20 h-20 mx-auto rounded-3xl bg-[#CDEFE0] text-[#16563F] flex items-center justify-center text-4xl shadow-xs">
-            🌸
+          <div className="flex justify-center">
+            <CompanionAvatar id={parsedWorldId} size="lg" className="ring-4 ring-amber-300 shadow-lg scale-110" />
           </div>
 
           <div className="space-y-3">

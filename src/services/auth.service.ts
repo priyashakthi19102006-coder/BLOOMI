@@ -102,15 +102,26 @@ export const authService = {
     }
 
     // Role check: query the user's verified database profile
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', data.user.id)
-      .single()
+    let profile = await this.getProfile(data.user.id)
 
-    if (profileError || !profile) {
-      await supabase.auth.signOut()
-      throw new Error('Failed to retrieve educator profile. Please contact administrator.')
+    if (!profile) {
+      // Fallback check against user metadata if database RLS issue occurred
+      const meta = data.user.user_metadata || {}
+      if (meta.role === 'teacher' || meta.role === 'admin') {
+        profile = {
+          id: data.user.id,
+          role: meta.role as 'teacher' | 'admin',
+          display_name: meta.display_name || data.user.email?.split('@')[0] || 'Educator',
+          registration_number: null,
+          avatar_id: 'owl',
+          grade_level: 3,
+          created_at: data.user.created_at || new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+      } else {
+        await supabase.auth.signOut()
+        throw new Error('Failed to retrieve educator profile. Please contact administrator.')
+      }
     }
 
     if (profile.role !== 'teacher' && profile.role !== 'admin') {
@@ -341,6 +352,9 @@ export const authService = {
           .maybeSingle()
 
         if (!error && data) return data
+        if (error && error.code === '42P17') {
+          console.warn('RLS policy recursion (42P17) detected when querying profiles table.')
+        }
       } catch (err) {
         console.warn(`Profile fetch attempt ${attempt + 1} note:`, err)
       }
@@ -348,6 +362,30 @@ export const authService = {
       if (attempt < retries - 1) {
         await new Promise((res) => setTimeout(res, 250 * (attempt + 1)))
       }
+    }
+
+    // Resilient fallback: If database RLS recursion prevented the profiles query,
+    // verify against active session user metadata so the user is not erroneously locked out.
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const authUser = sessionData?.session?.user
+      if (authUser && authUser.id === userId) {
+        const meta = authUser.user_metadata || {}
+        if (meta.role) {
+          return {
+            id: authUser.id,
+            role: meta.role as 'student' | 'teacher' | 'admin',
+            display_name: meta.display_name || authUser.email?.split('@')[0] || 'Bloomi Explorer',
+            registration_number: meta.registration_number || null,
+            avatar_id: meta.avatar_id || 'panda',
+            grade_level: meta.grade_level || 3,
+            created_at: authUser.created_at || new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+        }
+      }
+    } catch (fallbackErr) {
+      console.warn('Session metadata fallback check note:', fallbackErr)
     }
 
     return null

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { BloomiMascot } from '../components/BloomiMascot'
+import { CompanionAvatar } from '../components/worlds/CompanionAvatar'
 
 interface StudentLoginPageProps {
   initialMode?: 'signin' | 'signup'
@@ -48,10 +49,10 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const avatars = [
-    { id: 'lion', emoji: '🦁', name: 'Leo the Lion' },
-    { id: 'panda', emoji: '🐼', name: 'Pip the Panda' },
-    { id: 'fox', emoji: '🦊', name: 'Felix the Fox' },
-    { id: 'dolphin', emoji: '🐬', name: 'Dara the Dolphin' },
+    { id: 'lion', avatarKey: 'bear', name: 'Barnaby Bear', realm: 'Amusement Park' },
+    { id: 'dolphin', avatarKey: 'bunny', name: 'Pip Bunny', realm: 'Food World' },
+    { id: 'panda', avatarKey: 'panda', name: 'Koa Panda', realm: 'Animal World' },
+    { id: 'fox', avatarKey: 'fox', name: 'Nova Star Fox', realm: 'Space World' },
   ]
 
   const validateSignIn = (regNo: string, pwd: string): string | null => {
@@ -330,17 +331,16 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
                     key={av.id}
                     type="button"
                     onClick={() => setSelectedAvatar(av.id)}
-                    className={`min-h-[64px] p-3 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all focus:outline-none focus:ring-3 focus:ring-[#24483D] ${
+                    className={`min-h-[72px] p-2.5 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all focus:outline-none focus:ring-4 focus:ring-[#24483D] ${
                       selectedAvatar === av.id
-                        ? 'border-[#24483D] bg-[#CDEFE0] scale-105 shadow-xs'
+                        ? 'border-[#24483D] bg-[#CDEFE0] scale-105 shadow-sm'
                         : 'border-[rgba(36,72,61,0.15)] hover:border-[#24483D] bg-[#FFFDF7]'
                     }`}
                     aria-pressed={selectedAvatar === av.id}
                   >
-                    <span className="text-3xl" role="img" aria-label={av.name}>
-                      {av.emoji}
-                    </span>
-                    <span className="text-xs font-bold text-[#24483D]">{av.name}</span>
+                    <CompanionAvatar id={av.avatarKey} size="md" />
+                    <span className="text-xs font-black text-[#24483D] text-center leading-tight">{av.name}</span>
+                    <span className="text-[10px] font-bold text-[#3D6355]/80">{av.realm}</span>
                   </button>
                 ))}
               </div>
@@ -444,17 +444,16 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
                     key={av.id}
                     type="button"
                     onClick={() => setSelectedAvatar(av.id)}
-                    className={`min-h-[64px] p-3 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all focus:outline-none focus:ring-3 focus:ring-[#24483D] ${
+                    className={`min-h-[72px] p-2.5 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all focus:outline-none focus:ring-4 focus:ring-[#24483D] ${
                       selectedAvatar === av.id
-                        ? 'border-[#24483D] bg-[#CDEFE0] scale-105 shadow-xs'
+                        ? 'border-[#24483D] bg-[#CDEFE0] scale-105 shadow-sm'
                         : 'border-[rgba(36,72,61,0.15)] hover:border-[#24483D] bg-[#FFFDF7]'
                     }`}
                     aria-pressed={selectedAvatar === av.id}
                   >
-                    <span className="text-3xl" role="img" aria-label={av.name}>
-                      {av.emoji}
-                    </span>
-                    <span className="text-xs font-bold text-[#24483D]">{av.name}</span>
+                    <CompanionAvatar id={av.avatarKey} size="md" />
+                    <span className="text-xs font-black text-[#24483D] text-center leading-tight">{av.name}</span>
+                    <span className="text-[10px] font-bold text-[#3D6355]/80">{av.realm}</span>
                   </button>
                 ))}
               </div>

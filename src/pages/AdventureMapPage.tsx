@@ -14,6 +14,8 @@ import {
 import { curriculumWorlds } from '../data/curriculum/curriculumGenerator'
 import { progressionService } from '../services/progression.service'
 import { useAuth } from '../contexts/AuthContext'
+import { WorldScene } from '../components/worlds/WorldScene'
+import { CompanionAvatar } from '../components/worlds/CompanionAvatar'
 import type { WorldId, InstructionalBand, LevelStatus } from '../types/curriculum.types'
 
 export const AdventureMapPage: React.FC = () => {
@@ -149,39 +151,62 @@ export const AdventureMapPage: React.FC = () => {
         </div>
       </nav>
 
-      {/* Active World Overview Banner */}
+      {/* Active World Overview Banner with Realistic World Artwork */}
       <section
         aria-labelledby="world-banner-title"
-        className="p-6 sm:p-8 rounded-3xl bg-white border-2 border-[rgba(36,72,61,0.15)] shadow-xs space-y-4"
+        className="rounded-3xl bg-white border-2 border-[rgba(36,72,61,0.15)] shadow-xs overflow-hidden"
       >
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#CDEFE0] text-[#16563F] font-extrabold uppercase">
-                50 Adventure Levels
-              </span>
-              <span className="text-xs text-[#3D6355] font-semibold">5 Tasks Per Level</span>
-            </div>
-            <h1 id="world-banner-title" className="text-2xl sm:text-3xl font-extrabold font-fredoka text-[#24483D] mt-1">
-              {currentWorld.title} &bull; {currentWorld.subtitle}
-            </h1>
-            <p className="text-xs sm:text-sm text-[#3D6355] font-medium">
-              {currentWorld.description}
-            </p>
-          </div>
+        <div className="relative w-full aspect-[21/9] sm:aspect-[16/6] bg-slate-900 overflow-hidden">
+          <WorldScene worldId={activeWorldId} className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
 
-          <div className="w-full sm:w-64 bg-[#FFFDF7] p-4 rounded-2xl border border-[rgba(36,72,61,0.12)] space-y-1.5 shrink-0">
-            <div className="flex justify-between text-xs font-bold text-[#24483D]">
-              <span>Progress</span>
-              <span>
-                {worldSummary.completedLevels} of {worldSummary.totalLevels} ({worldSummary.percentage}%)
+          {/* Floating Companion Avatar in Banner */}
+          <div className="absolute bottom-4 right-4 flex items-center gap-3 bg-white/95 backdrop-blur-xs p-2 rounded-2xl shadow-md border border-white">
+            <CompanionAvatar id={activeWorldId} size="md" />
+            <div className="pr-2">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#3D6355] block">
+                Guide Companion
+              </span>
+              <span className="text-xs font-black text-[#24483D]">
+                {activeWorldId === 'writing' && 'Barnaby Bear'}
+                {activeWorldId === 'speaking' && 'Pip Bunny'}
+                {activeWorldId === 'social' && 'Koa Panda'}
+                {activeWorldId === 'visual' && 'Nova Star Fox'}
               </span>
             </div>
-            <div className="w-full h-3 bg-[rgba(36,72,61,0.1)] rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[#24483D] transition-all duration-500 rounded-full"
-                style={{ width: `${worldSummary.percentage}%` }}
-              />
+          </div>
+        </div>
+
+        <div className="p-6 sm:p-8 space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#CDEFE0] text-[#16563F] font-extrabold uppercase">
+                  50 Adventure Levels
+                </span>
+                <span className="text-xs text-[#3D6355] font-semibold">5 Tasks Per Level</span>
+              </div>
+              <h1 id="world-banner-title" className="text-2xl sm:text-3xl font-extrabold font-fredoka text-[#24483D] mt-1">
+                {currentWorld.title} &bull; {currentWorld.subtitle}
+              </h1>
+              <p className="text-xs sm:text-sm text-[#3D6355] font-medium">
+                {currentWorld.description}
+              </p>
+            </div>
+
+            <div className="w-full sm:w-64 bg-[#FFFDF7] p-4 rounded-2xl border border-[rgba(36,72,61,0.12)] space-y-1.5 shrink-0">
+              <div className="flex justify-between text-xs font-bold text-[#24483D]">
+                <span>Progress</span>
+                <span>
+                  {worldSummary.completedLevels} of {worldSummary.totalLevels} ({worldSummary.percentage}%)
+                </span>
+              </div>
+              <div className="w-full h-3 bg-[rgba(36,72,61,0.1)] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[#24483D] transition-all duration-500 rounded-full"
+                  style={{ width: `${worldSummary.percentage}%` }}
+                />
+              </div>
             </div>
           </div>
         </div>

@@ -231,6 +231,70 @@ export const progressionService = {
   },
 
   /**
+   * Load student progress directly from Supabase student_level_progress table.
+   * Merges cloud data into local storage cache so progress survives across devices.
+   */
+  async loadFromCloud(userId: string): Promise<StudentCurriculumProgress> {
+    const current = this.getProgress(userId)
+    if (!isSupabaseConfigured || !supabase || userId === 'demo_student') {
+      return current
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('student_level_progress')
+        .select('*')
+        .eq('student_id', userId)
+
+      if (error) {
+        console.warn('Could not fetch cloud progress (using local cache):', error.message)
+        return current
+      }
+
+      if (data && data.length > 0) {
+        data.forEach((row: any) => {
+          const wId = row.world_id as WorldId
+          if (!current.worlds[wId]) return
+
+          const lvlNum = row.level_number as number
+          current.worlds[wId].levelRecords[lvlNum] = {
+            levelNumber: lvlNum,
+            worldId: wId,
+            completed: Boolean(row.completed),
+            completedTasks: row.completed_tasks || 0,
+            starsEarned: row.stars_earned || 0,
+            completedTaskIds: row.completed_task_ids || [],
+            completedAt: row.completed_at || undefined,
+          }
+
+          if (row.completed && !current.worlds[wId].completedLevelNumbers.includes(lvlNum)) {
+            current.worlds[wId].completedLevelNumbers.push(lvlNum)
+            current.worlds[wId].completedLevelNumbers.sort((a, b) => a - b)
+          }
+        })
+
+        // Recalculate currentLevelNumber for each world
+        ;(Object.keys(current.worlds) as WorldId[]).forEach((wId) => {
+          const completed = current.worlds[wId].completedLevelNumbers
+          if (completed.length > 0) {
+            const highestCompleted = Math.max(...completed)
+            current.worlds[wId].currentLevelNumber = Math.min(highestCompleted + 1, 50)
+          }
+        })
+
+        current.isDemo = false
+        // Re-evaluate badges
+        evaluateBadges(current)
+        this.saveProgress(current)
+      }
+    } catch (err) {
+      console.warn('Failed to load cloud progress:', err)
+    }
+
+    return current
+  },
+
+  /**
    * Get specific progress record for a single level, including completed task IDs.
    */
   getLevelRecord(

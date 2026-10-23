@@ -695,6 +695,22 @@ export const teacherService = {
     const storageKey = `${DEMO_SUPPORT_RECORDS_KEY}${studentId}`
     setObservationsStorage(storageKey, JSON.stringify(updated))
 
+    if (isSupabaseConfigured && supabase && teacherId !== DEMO_TEACHER_ID) {
+      void Promise.resolve(
+        supabase.from('sensitive_support_records').insert({
+          student_id: newRecord.studentId,
+          documented_by: newRecord.documentedBy,
+          recorded_at: newRecord.recordedAt,
+          lawful_basis: newRecord.lawfulBasis,
+          category: newRecord.category,
+          details: newRecord.details,
+          review_date: newRecord.reviewDate,
+        })
+      ).catch((err: unknown) => {
+        console.warn('Supabase sensitive record insert note:', err)
+      })
+    }
+
     return { success: true, record: newRecord }
   },
 
