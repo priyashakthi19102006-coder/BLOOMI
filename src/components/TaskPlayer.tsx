@@ -55,6 +55,8 @@ export const TaskPlayer: React.FC<TaskPlayerProps> = ({
   const [feedbackMessage, setFeedbackMessage] = useState<string>('')
   const [detailedExplanation, setDetailedExplanation] = useState<string | undefined>()
   const [showHint, setShowHint] = useState<boolean>(false)
+  const [showExample, setShowExample] = useState<boolean>(false)
+  const [isSpeaking, setIsSpeaking] = useState<boolean>(false)
   const [hasCompletedCurrentTask, setHasCompletedCurrentTask] = useState<boolean>(false)
 
   // Reset state on task transition
@@ -66,8 +68,14 @@ export const TaskPlayer: React.FC<TaskPlayerProps> = ({
     setFeedbackMessage('')
     setDetailedExplanation(undefined)
     setShowHint(false)
+    setShowExample(false)
+    setIsSpeaking(false)
     setEnteredLetter('')
     setHasCompletedCurrentTask(false)
+
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel()
+    }
 
     if (task?.data?.type === 'ordering') {
       const data = task.data as OrderingTaskData
@@ -75,6 +83,12 @@ export const TaskPlayer: React.FC<TaskPlayerProps> = ({
         // Scramble initially deterministically or pseudo-randomly
         const scrambled = [...data.items].sort(() => 0.5 - Math.random()).map((i) => i.id)
         setOrderedItems(scrambled)
+      }
+    }
+
+    return () => {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel()
       }
     }
   }, [task?.id])
@@ -189,11 +203,30 @@ export const TaskPlayer: React.FC<TaskPlayerProps> = ({
     setDetailedExplanation(undefined)
   }
 
+  const handlePlayVoice = () => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return
+
+    if (isSpeaking) {
+      window.speechSynthesis.cancel()
+      setIsSpeaking(false)
+      return
+    }
+
+    window.speechSynthesis.cancel()
+    const textToSpeak = task.spokenInstruction || task.instruction
+    const utterance = new SpeechSynthesisUtterance(textToSpeak)
+    utterance.rate = 0.9 // gentle, clear pace for 8-9 year olds and literacy learners
+    utterance.onstart = () => setIsSpeaking(true)
+    utterance.onend = () => setIsSpeaking(false)
+    utterance.onerror = () => setIsSpeaking(false)
+    window.speechSynthesis.speak(utterance)
+  }
+
   return (
     <div className={`space-y-6 ${reducedMotion ? 'motion-reduce' : ''}`}>
       {/* Task Header & Prompt */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <span
             className={`text-xs font-extrabold uppercase tracking-wider px-3.5 py-1 rounded-full ${
               highContrast
@@ -203,16 +236,44 @@ export const TaskPlayer: React.FC<TaskPlayerProps> = ({
           >
             {task.title}
           </span>
-          {soundEnabled && (
-            <span
-              className={`text-xs flex items-center gap-1.5 font-semibold ${
-                highContrast ? 'text-[#D3E5DC]' : 'text-[#3D6355]'
-              }`}
-            >
-              <Volume2 className="w-4 h-4" aria-hidden="true" />
-              <span>Voice Guidance Ready</span>
-            </span>
-          )}
+
+          <div className="flex items-center gap-2">
+            {/* User-initiated audio button (iPad Safari friendly) */}
+            {soundEnabled && (
+              <button
+                type="button"
+                onClick={handlePlayVoice}
+                aria-label={isSpeaking ? 'Stop spoken voice' : 'Listen to spoken instructions'}
+                className={`min-h-[44px] px-3.5 py-1.5 rounded-xl border text-xs font-extrabold inline-flex items-center gap-1.5 transition-all focus:outline-none focus:ring-3 focus:ring-[#24483D] ${
+                  isSpeaking
+                    ? 'bg-[#FFE0CC] text-[#7A3300] border-[#F8D2B8] animate-pulse'
+                    : highContrast
+                    ? 'bg-[#152E26] text-[#FFFDF7] border-[#FFF0B3]'
+                    : 'bg-white text-[#24483D] border-[rgba(36,72,61,0.15)] hover:bg-[#F2FAF6]'
+                }`}
+              >
+                <Volume2 className="w-4 h-4 text-current" aria-hidden="true" />
+                <span>{isSpeaking ? 'Reading Aloud...' : 'Read to Me'}</span>
+              </button>
+            )}
+
+            {task.visualDemonstration && (
+              <button
+                type="button"
+                onClick={() => setShowExample((prev) => !prev)}
+                className={`min-h-[44px] px-3.5 py-1.5 rounded-xl border text-xs font-extrabold inline-flex items-center gap-1.5 transition-all focus:outline-none focus:ring-3 focus:ring-[#24483D] ${
+                  showExample
+                    ? 'bg-[#E8DEFF] text-[#4A248A] border-[#D5C2FE]'
+                    : highContrast
+                    ? 'bg-[#152E26] text-[#FFFDF7] border-[#FFF0B3]'
+                    : 'bg-white text-[#24483D] border-[rgba(36,72,61,0.15)] hover:bg-[#F9F6FF]'
+                }`}
+              >
+                <Lightbulb className="w-4 h-4 text-current" aria-hidden="true" />
+                <span>{showExample ? 'Hide Example' : 'See Example'}</span>
+              </button>
+            )}
+          </div>
         </div>
 
         <h3
@@ -222,6 +283,42 @@ export const TaskPlayer: React.FC<TaskPlayerProps> = ({
         >
           {task.instruction}
         </h3>
+
+        {/* Visual Demonstration Example Panel */}
+        {showExample && task.visualDemonstration && (
+          <div
+            role="region"
+            aria-label="Visual Demonstration Example"
+            className={`p-4 rounded-2xl border-2 transition-all ${
+              highContrast
+                ? 'bg-[#152E26] border-[#FFF0B3] text-[#FFFDF7]'
+                : 'bg-[#F7F4FF] border-[#D5C2FE] text-[#4A248A]'
+            }`}
+          >
+            <div className="flex items-start gap-2.5">
+              <span className="text-xl" aria-hidden="true">💡</span>
+              <div className="space-y-1">
+                <h4 className="text-xs font-extrabold uppercase tracking-wider">Visual Guide / Example</h4>
+                <p className="text-sm font-semibold">{task.visualDemonstration}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Supported Response Methods Pill Tags */}
+        {task.supportedResponseMethods && task.supportedResponseMethods.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            <span className="text-[11px] font-bold text-[#3D6355]">Ways to answer:</span>
+            {task.supportedResponseMethods.map((m, idx) => (
+              <span
+                key={idx}
+                className="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-[#F2FAF6] text-[#16563F] border border-[rgba(36,72,61,0.1)]"
+              >
+                {m}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Interactive Activity Card */}

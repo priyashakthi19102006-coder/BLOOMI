@@ -20,6 +20,63 @@ export interface StudentLoginResponse {
   error?: string
 }
 
+/**
+ * Safely extracts user-facing error messages from Supabase Edge Function HTTP responses.
+ * Prevents displaying generic "Edge Function returned a non-2xx status code" to users.
+ * Strips any sensitive tokens, service keys, internal emails, or stack traces.
+ */
+export async function extractEdgeFunctionError(
+  error: unknown,
+  fallbackMessage: string
+): Promise<string> {
+  if (error && typeof error === 'object') {
+    const errObj = error as Record<string, any>
+
+    // 1. In @supabase/supabase-js FunctionsHttpError, the response body is available on context.json()
+    if (errObj.context && typeof errObj.context.json === 'function') {
+      try {
+        const body = await errObj.context.json()
+        if (body && typeof body.error === 'string' && body.error.trim()) {
+          return sanitizeClientErrorMessage(body.error.trim())
+        }
+      } catch {
+        // Fallback to text if JSON parsing fails
+        try {
+          if (typeof errObj.context.text === 'function') {
+            const rawText = await errObj.context.text()
+            if (rawText && rawText.length < 200 && !rawText.includes('<html')) {
+              return sanitizeClientErrorMessage(rawText.trim())
+            }
+          }
+        } catch {
+          // ignore parsing error and continue
+        }
+      }
+    }
+
+    // 2. If error.message has a descriptive message other than the generic non-2xx wrapper
+    if (
+      typeof errObj.message === 'string' &&
+      errObj.message.trim() &&
+      errObj.message !== 'Edge Function returned a non-2xx status code'
+    ) {
+      return sanitizeClientErrorMessage(errObj.message)
+    }
+  }
+
+  return sanitizeClientErrorMessage(fallbackMessage)
+}
+
+function sanitizeClientErrorMessage(msg: string): string {
+  // Strip any internal routing emails, JWT tokens, keys, or internal postgres errors
+  let clean = msg.replace(/[\w.-]+@bloomi\.internal/gi, '[school account]')
+  clean = clean.replace(/[\w.-]+@[\w.-]+\.\w+/g, '[protected email]')
+  clean = clean.replace(/eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+/g, '[token]')
+  clean = clean.replace(/sbp_[a-zA-Z0-9]+/g, '[key]')
+  clean = clean.replace(/P\d{4}:/g, '') // strip postgres error codes like P0001
+  return clean.trim()
+}
+
 export const authService = {
   /**
    * Educator Sign-In using Supabase Auth with email & password.
@@ -81,6 +138,12 @@ export const authService = {
       )
     }
 
+    // Isolate session: Clear any existing authenticated session before signing in as a different student
+    const { data: currentSession } = await supabase.auth.getSession()
+    if (currentSession?.session) {
+      await supabase.auth.signOut()
+    }
+
     const sanitizedRegNo = registrationNumber.trim().toUpperCase()
 
     // Dispatch to Supabase Edge Function
@@ -95,10 +158,10 @@ export const authService = {
     )
 
     if (error || !data || !data.session) {
-      const errorMsg =
-        (error as any)?.message ||
-        data?.error ||
-        'Invalid registration number or password.'
+      const errorMsg = await extractEdgeFunctionError(
+        error,
+        data?.error || 'Invalid school registration number or password.'
+      )
       throw new Error(errorMsg)
     }
 
@@ -112,29 +175,182 @@ export const authService = {
       throw new Error('Failed to initialize student session.')
     }
 
-    // Retrieve verified profile
+    // Retrieve verified profile with resilient retry to prevent race conditions with DB triggers
     const profile = await this.getProfile(sessionData.session.user.id)
     if (!profile) {
-      throw new Error('Failed to load student profile.')
+      await supabase.auth.signOut()
+      throw new Error(
+        'Unable to load your student adventure profile. Please check your connection and try again.'
+      )
+    }
+
+    if (profile.role !== 'student' && profile.role !== 'admin') {
+      await supabase.auth.signOut()
+      throw new Error(
+        'Access denied: This account is registered as an educator. Please use the Teacher Portal.'
+      )
     }
 
     return { profile, session: sessionData.session }
   },
 
   /**
-   * Retrieve active user profile
+   * Student Account Sign-Up / Activation using School Registration Code.
+   * Dispatched exclusively through trusted server-side Supabase Edge Function.
    */
-  async getProfile(userId: string): Promise<Profile | null> {
+  async signUpStudent(
+    displayName: string,
+    registrationNumber: string,
+    password: string,
+    avatarId: string = 'panda'
+  ): Promise<{ profile: Profile; session: Session }> {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error(
+        'Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.local.'
+      )
+    }
+
+    // Isolate session: Clear any existing authenticated session before creating a new student account
+    const { data: currentSession } = await supabase.auth.getSession()
+    if (currentSession?.session) {
+      await supabase.auth.signOut()
+    }
+
+    const sanitizedRegNo = registrationNumber.trim().toUpperCase()
+    const sanitizedName = displayName.trim()
+
+    // Dispatch to Supabase Edge Function
+    const { data, error } = await supabase.functions.invoke<StudentLoginResponse>(
+      'student-signup',
+      {
+        body: {
+          displayName: sanitizedName,
+          registrationNumber: sanitizedRegNo,
+          password,
+          avatarId,
+          gradeLevel: 3,
+        },
+      }
+    )
+
+    if (error || !data || !data.session) {
+      const errorMsg = await extractEdgeFunctionError(
+        error,
+        data?.error || 'Failed to register student account. Please try again.'
+      )
+      throw new Error(errorMsg)
+    }
+
+    // Set the authenticated session in the client
+    const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+    })
+
+    if (sessionError || !sessionData.session) {
+      throw new Error('Failed to initialize student session.')
+    }
+
+    // Retrieve verified profile with resilient retry
+    const profile = await this.getProfile(sessionData.session.user.id)
+    if (!profile) {
+      await supabase.auth.signOut()
+      throw new Error('Failed to load registered student profile. Please try signing in.')
+    }
+
+    return { profile, session: sessionData.session }
+  },
+
+  /**
+   * Verified Educator Onboarding using School Invitation Code.
+   * Public registration cannot self-elevate to teacher without a verified code.
+   */
+  async signUpTeacher(
+    email: string,
+    password: string,
+    displayName: string,
+    schoolName: string,
+    invitationCode: string
+  ): Promise<{ user: User; profile: Profile; session: Session }> {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error(
+        'Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.local.'
+      )
+    }
+
+    const trimmedCode = invitationCode.trim().toUpperCase()
+    // Valid school authorization codes
+    const VALID_CODES = ['BLOOMI-TEACH-2026', 'BLOOMI-EDU-GRADE3', 'BLOOMI-SPECIALIST-2026']
+
+    if (!VALID_CODES.includes(trimmedCode)) {
+      throw new Error(
+        'Invalid educator invitation code. Please request an approved school code from your district administrator.'
+      )
+    }
+
+    // Clear any existing session first
+    const { data: currentSession } = await supabase.auth.getSession()
+    if (currentSession?.session) {
+      await supabase.auth.signOut()
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        data: {
+          role: 'teacher',
+          display_name: displayName.trim(),
+          school_name: schoolName.trim(),
+        },
+      },
+    })
+
+    if (error || !data.user) {
+      throw new Error(error?.message || 'Failed to create educator account.')
+    }
+
+    if (!data.session) {
+      throw new Error(
+        'Account created successfully! Please check your school inbox to verify your email address before signing in.'
+      )
+    }
+
+    // Retrieve verified profile
+    const profile = await this.getProfile(data.user.id)
+    if (!profile || (profile.role !== 'teacher' && profile.role !== 'admin')) {
+      await supabase.auth.signOut()
+      throw new Error('Failed to verify educator authorization.')
+    }
+
+    return { user: data.user, profile, session: data.session }
+  },
+
+  /**
+   * Retrieve active user profile with resilient retry for database trigger synchronization
+   */
+  async getProfile(userId: string, retries: number = 3): Promise<Profile | null> {
     if (!supabase) return null
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle()
+    for (let attempt = 0; attempt < retries; attempt++) {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle()
 
-    if (error || !data) return null
-    return data
+        if (!error && data) return data
+      } catch (err) {
+        console.warn(`Profile fetch attempt ${attempt + 1} note:`, err)
+      }
+
+      if (attempt < retries - 1) {
+        await new Promise((res) => setTimeout(res, 250 * (attempt + 1)))
+      }
+    }
+
+    return null
   },
 
   /**

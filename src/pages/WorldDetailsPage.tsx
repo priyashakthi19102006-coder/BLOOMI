@@ -1,6 +1,6 @@
 import React from 'react'
 import { useParams, Link, useOutletContext } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2, Play, Sparkles } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Play } from 'lucide-react'
 import { learningWorldsService } from '../services/learningWorlds.service'
 import type { AccessibilityContextType } from '../layouts/RootLayout'
 
@@ -162,18 +162,46 @@ export const WorldDetailsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Learning Roadmap Notice */}
-        <div
-          className={`p-4 rounded-2xl border flex items-center gap-3 text-xs font-medium ${
-            highContrast
-              ? 'bg-[#0C1210] border-[#FFF0B3] text-[#FFF0B3]'
-              : 'bg-[#FFFDF7] border-[#CDEFE0] text-[#16563F]'
-          }`}
-        >
-          <Sparkles className="w-5 h-5 text-[#16563F] shrink-0" aria-hidden="true" />
-          <span>
-            Interactive minigames and adaptive learning modules for {world.title} are being integrated in the upcoming learning engine stage.
-          </span>
+        {/* Educational Mapping & Supported Response Methods */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          {world.companionName && (
+            <div className={`p-4 rounded-2xl border ${highContrast ? 'bg-[#0C1210] border-[#FFF0B3]' : 'bg-[#FFFDF7] border-[rgba(36,72,61,0.12)]'}`}>
+              <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#3D6355] mb-1">
+                World Companion
+              </h3>
+              <p className="text-sm font-bold text-[#24483D]">{world.companionName}</p>
+              <p className="text-xs text-[#3D6355] mt-1">Guiding and cheering you on every level with friendly audio cues and demonstrations.</p>
+            </div>
+          )}
+
+          {world.supportedResponseMethods && (
+            <div className={`p-4 rounded-2xl border ${highContrast ? 'bg-[#0C1210] border-[#FFF0B3]' : 'bg-[#FFFDF7] border-[rgba(36,72,61,0.12)]'}`}>
+              <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#3D6355] mb-1">
+                Supported Response Methods
+              </h3>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {world.supportedResponseMethods.map((method, idx) => (
+                  <span
+                    key={idx}
+                    className="text-xs px-2.5 py-1 rounded-lg font-bold bg-[#E8DEFF] text-[#4A248A] border border-[#D5C2FE]"
+                  >
+                    {method}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Start Adventure Action */}
+        <div className="pt-2 flex flex-wrap gap-4 items-center">
+          <Link
+            to={`/student/map?world=${world.id}`}
+            className="min-h-[48px] inline-flex items-center gap-2.5 px-8 py-3.5 rounded-2xl font-extrabold text-base bg-[#FFE0CC] hover:bg-[#FFCFB0] text-[#7A3300] border-2 border-[#F8D2B8] shadow-sm transition-all cartoon-btn-3d focus:outline-none focus:ring-4 focus:ring-[#7A3300]"
+          >
+            <Play className="w-5 h-5 text-[#7A3300]" aria-hidden="true" />
+            <span>Enter {world.title} Levels</span>
+          </Link>
         </div>
       </div>
     </div>

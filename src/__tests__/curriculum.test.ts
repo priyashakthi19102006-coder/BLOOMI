@@ -192,3 +192,42 @@ describe('Progression Rules & Level Access Engine', () => {
     expect(statusCorrupted).toBe('available')
   })
 })
+
+describe('Four Magical Worlds Thematic Mapping & Accessible Accommodations', () => {
+  it('maps the four educational skill domains to the four 3D-cartoon magical worlds', () => {
+    const writingWorld = curriculumWorlds.writing
+    expect(writingWorld.title).toBe('Magic Amusement Park')
+    expect(writingWorld.magicalWorldName).toBe('Magic Amusement Park')
+    expect(writingWorld.companionName).toContain('Barnaby')
+    expect(writingWorld.supportedResponseMethods?.length).toBeGreaterThan(0)
+
+    const speakingWorld = curriculumWorlds.speaking
+    expect(speakingWorld.title).toBe('Magic Food World')
+    expect(speakingWorld.magicalWorldName).toBe('Magic Food World')
+    expect(speakingWorld.companionName).toContain('Pip')
+
+    const visualWorld = curriculumWorlds.visual
+    expect(visualWorld.title).toBe('Magic Space World')
+    expect(visualWorld.magicalWorldName).toBe('Magic Space World')
+    expect(visualWorld.companionName).toContain('Nova')
+
+    const socialWorld = curriculumWorlds.social
+    expect(socialWorld.title).toBe('Magic Animal World')
+    expect(socialWorld.magicalWorldName).toBe('Magic Animal World')
+    expect(socialWorld.companionName).toContain('Koa')
+  })
+
+  it('provides spoken instructions and visual demonstrations across curriculum tasks', () => {
+    const writingLvl1 = curriculumService.getLevel('writing', 1)
+    expect(writingLvl1).toBeDefined()
+    expect(writingLvl1?.tasks).toHaveLength(5)
+
+    writingLvl1?.tasks.forEach((task) => {
+      expect(task.spokenInstruction).toBeTruthy()
+      expect(task.visualDemonstration).toBeTruthy()
+      expect(task.encouragementTip).toBeTruthy()
+      expect(task.supportedResponseMethods?.length).toBeGreaterThan(0)
+    })
+  })
+})
+

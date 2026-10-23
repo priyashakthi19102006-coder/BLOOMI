@@ -14,6 +14,12 @@ export interface LearningWorld {
   iconName: string;
   targetSkills: string[];
   sampleActivities: string[];
+  magicalWorldName?: string;
+  skillDomains?: string[];
+  supportedResponseMethods?: string[];
+  learningObjectivesSummary?: string;
+  sceneTheme?: 'amusement_park' | 'food_world' | 'animal_world' | 'space_world';
+  companionName?: string;
 }
 
 export interface AccessibilitySettings {
@@ -22,3 +28,4 @@ export interface AccessibilitySettings {
   reducedMotion: boolean;
   readAloudEnabled: boolean;
 }
+

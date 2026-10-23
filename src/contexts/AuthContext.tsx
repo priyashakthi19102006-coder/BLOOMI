@@ -14,6 +14,19 @@ interface AuthContextValue {
   isConfigured: boolean
   loginTeacher: (email: string, password: string) => Promise<void>
   loginStudent: (registrationNumber: string, password: string) => Promise<void>
+  signUpStudent: (
+    displayName: string,
+    registrationNumber: string,
+    password: string,
+    avatarId?: string
+  ) => Promise<void>
+  signUpTeacher: (
+    email: string,
+    password: string,
+    displayName: string,
+    schoolName: string,
+    invitationCode: string
+  ) => Promise<void>
   loginDemoStudent: () => void
   loginDemoTeacher: () => void
   logout: () => Promise<void>
@@ -117,6 +130,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
+  const signUpStudent = async (
+    displayName: string,
+    registrationNumber: string,
+    password: string,
+    avatarId?: string
+  ) => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const { profile: studentProfile, session: newSession } = await authService.signUpStudent(
+        displayName,
+        registrationNumber,
+        password,
+        avatarId
+      )
+      setSession(newSession)
+      setProfile(studentProfile)
+    } catch (err: any) {
+      const msg = err.message || 'Failed to register student account.'
+      setError(msg)
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const loginDemoStudent = () => {
     const demoProfile: Profile = {
       id: 'demo_student',
@@ -186,6 +225,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
+  const signUpTeacher = async (
+    email: string,
+    password: string,
+    displayName: string,
+    schoolName: string,
+    invitationCode: string
+  ) => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const { profile: teacherProfile, session: newSession } = await authService.signUpTeacher(
+        email,
+        password,
+        displayName,
+        schoolName,
+        invitationCode
+      )
+      setSession(newSession)
+      setProfile(teacherProfile)
+    } catch (err: any) {
+      const msg = err.message || 'Failed to complete educator onboarding.'
+      setError(msg)
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const role = useMemo(() => profile?.role ?? null, [profile])
 
   const value: AuthContextValue = {
@@ -198,6 +265,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isConfigured: isSupabaseConfigured,
     loginTeacher,
     loginStudent,
+    signUpStudent,
+    signUpTeacher,
     loginDemoStudent,
     loginDemoTeacher,
     logout,

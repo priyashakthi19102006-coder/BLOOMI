@@ -31,8 +31,8 @@ export const StudentReportPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [isLoading, setIsLoading] = useState<boolean>(true)
 
-  // Active tab: 'progress' | 'timeline' | 'observations' | 'suggestions'
-  const [activeTab, setActiveTab] = useState<'progress' | 'timeline' | 'observations' | 'suggestions'>('progress')
+  // Active tab: 'progress' | 'timeline' | 'observations' | 'suggestions' | 'support'
+  const [activeTab, setActiveTab] = useState<'progress' | 'timeline' | 'observations' | 'suggestions' | 'support'>('progress')
 
   // New observation form state
   const [newObsContext, setNewObsContext] = useState<string>('')
@@ -41,6 +41,14 @@ export const StudentReportPage: React.FC = () => {
   const [newObsFollowUp, setNewObsFollowUp] = useState<string>('')
   const [obsDate, setObsDate] = useState<string>(new Date().toISOString().split('T')[0])
   const [obsSubmitSuccess, setObsSubmitSuccess] = useState<boolean>(false)
+
+  // New sensitive support record state
+  const [suppDocBy, setSuppDocBy] = useState<string>('')
+  const [suppLawfulBasis, setSuppLawfulBasis] = useState<'Parent Consent' | 'IEP Education Plan' | 'Specialist Assessment'>('IEP Education Plan')
+  const [suppCategory, setSuppCategory] = useState<'Accommodations' | 'Communication Preferences' | 'Sensory Needs' | 'Documented Educational Support'>('Accommodations')
+  const [suppDetails, setSuppDetails] = useState<string>('')
+  const [suppReviewDate, setSuppReviewDate] = useState<string>(new Date(Date.now() + 1000 * 60 * 60 * 24 * 90).toISOString().split('T')[0])
+  const [suppSubmitSuccess, setSuppSubmitSuccess] = useState<boolean>(false)
 
   const loadReport = async () => {
     if (!studentId) return
@@ -82,6 +90,41 @@ export const StudentReportPage: React.FC = () => {
     }
   }
 
+  const handleAddSupportRecord = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!studentId || !suppDocBy.trim() || !suppDetails.trim()) return
+
+    const result = teacherService.addSensitiveSupportRecord(teacherId, studentId, {
+      documentedBy: suppDocBy,
+      lawfulBasis: suppLawfulBasis,
+      category: suppCategory,
+      details: suppDetails,
+      reviewDate: suppReviewDate,
+      recordedAt: new Date().toISOString().split('T')[0],
+      studentId,
+    })
+
+    if (result.success) {
+      setSuppSubmitSuccess(true)
+      setSuppDocBy('')
+      setSuppDetails('')
+      loadReport()
+      setTimeout(() => setSuppSubmitSuccess(false), 4000)
+    }
+  }
+
+  const handleExportReport = () => {
+    if (!report) return
+    const text = teacherService.exportReportToText(report)
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `BLOOMI_Report_${report.student.registrationNumber}_${new Date().toISOString().split('T')[0]}.txt`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   // Unauthorized access state
   if (!isLoading && !isAuthorized) {
     return (
@@ -117,7 +160,7 @@ export const StudentReportPage: React.FC = () => {
     )
   }
 
-  const { student, worldSummaries, rewardSummary, demonstratedSuccesses, areasForGrowth, timeline, observations, suggestions } = report
+  const { student, worldSummaries, rewardSummary, demonstratedSuccesses, areasForGrowth, timeline, observations, suggestions, supportRecords = [] } = report
 
   const avatarMap: Record<string, string> = {
     lion: '🦁',
@@ -131,7 +174,7 @@ export const StudentReportPage: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto py-4 sm:py-8 space-y-6">
       {/* Top Navigation */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <Link
           to="/teacher/dashboard"
           className="min-h-[44px] inline-flex items-center gap-2 text-sm font-extrabold text-[#24483D] hover:text-[#16563F] bg-white border border-[rgba(36,72,61,0.15)] px-4 py-2.5 rounded-2xl shadow-xs transition-colors focus:outline-none focus:ring-3 focus:ring-[#24483D]"
@@ -140,12 +183,22 @@ export const StudentReportPage: React.FC = () => {
           <span>Back to Classroom Roster</span>
         </Link>
 
-        {student.isDemo && (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#FFFBE6] border border-[#FCE58D] text-xs font-bold text-[#664B00]">
-            <Info className="w-3.5 h-3.5" aria-hidden="true" />
-            <span>Demo Student Record</span>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleExportReport}
+            className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#F7F4FF] hover:bg-[#E8DEFF] border-2 border-[#D5C2FE] text-[#4A248A] text-xs sm:text-sm font-extrabold shadow-xs transition-all focus:outline-none focus:ring-3 focus:ring-[#4A248A]"
+          >
+            <span>Export Learning Report (.txt)</span>
+          </button>
+
+          {student.isDemo && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FFFBE6] border border-[#FCE58D] text-xs font-bold text-[#664B00]">
+              <Info className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Demo Student Record</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Student Profile Banner */}
@@ -263,6 +316,17 @@ export const StudentReportPage: React.FC = () => {
           }`}
         >
           Support Strategies ({suggestions.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('support')}
+          className={`min-h-[44px] px-5 py-2 rounded-t-xl text-xs sm:text-sm font-extrabold transition-all border-b-2 ${
+            activeTab === 'support'
+              ? 'border-[#24483D] text-[#24483D] bg-white shadow-xs'
+              : 'border-transparent text-[#3D6355] hover:text-[#24483D]'
+          }`}
+        >
+          Protected Support Records ({supportRecords.length})
         </button>
       </div>
 
@@ -633,6 +697,170 @@ export const StudentReportPage: React.FC = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: SENSITIVE DOCUMENTED SUPPORT RECORDS & ACCOMMODATIONS */}
+      {activeTab === 'support' && (
+        <div className="space-y-6">
+          {/* Statutory & Privacy Notice */}
+          <div className="p-5 rounded-2xl bg-[#FFFDF7] border-2 border-[#D5C2FE] text-xs text-[#24483D] space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full bg-[#E8DEFF] text-[#4A248A] font-extrabold uppercase text-[10px] tracking-wider">
+                Protected Confidential Record
+              </span>
+              <strong className="text-[#4A248A] text-sm font-fredoka">Strict Lawful Basis &amp; Guardian Consent Policy</strong>
+            </div>
+            <p className="text-[#3D6355] leading-relaxed">
+              These records reflect documented learning accommodations, communication preferences, and school support plans provided by authorized guardians or certified school specialists.
+            </p>
+            <div className="p-3 rounded-xl bg-[#F7F4FF] border border-[#D5C2FE] text-[11px] text-[#4A248A] font-medium">
+              <strong>Non-Diagnostic Commitment:</strong> BLOOMI strictly never diagnoses medical conditions or developmental disorders from student gameplay, task speeds, or interaction choices. Documented records are maintained solely to deliver agreed-upon classroom accommodations.
+            </div>
+          </div>
+
+          {/* Add Documented Support Entry Form */}
+          <div className="p-6 rounded-2xl bg-white border-2 border-[rgba(36,72,61,0.12)] shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold font-fredoka text-base text-[#24483D] flex items-center gap-2">
+                <PlusCircle className="w-5 h-5 text-[#16563F]" />
+                <span>Log Authorized Support Accommodation</span>
+              </h3>
+              {suppSubmitSuccess && (
+                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                  ✓ Support accommodation saved!
+                </span>
+              )}
+            </div>
+
+            <form onSubmit={handleAddSupportRecord} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#3D6355] mb-1">
+                    Documented By (Authorised Source)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Dr. Helen Rostova (School Psychologist)"
+                    value={suppDocBy}
+                    onChange={(e) => setSuppDocBy(e.target.value)}
+                    className="w-full min-h-[44px] px-3.5 py-2 rounded-xl text-xs sm:text-sm border border-[rgba(36,72,61,0.2)] bg-[#FFFDF7]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#3D6355] mb-1">
+                    Lawful Basis / Authority
+                  </label>
+                  <select
+                    value={suppLawfulBasis}
+                    onChange={(e) => setSuppLawfulBasis(e.target.value as any)}
+                    className="w-full min-h-[44px] px-3.5 py-2 rounded-xl text-xs sm:text-sm border border-[rgba(36,72,61,0.2)] bg-[#FFFDF7]"
+                  >
+                    <option value="IEP Education Plan">IEP Education Plan</option>
+                    <option value="Parent Consent">Parent / Guardian Consent on File</option>
+                    <option value="Specialist Assessment">Specialist Assessment</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#3D6355] mb-1">
+                    Accommodation Category
+                  </label>
+                  <select
+                    value={suppCategory}
+                    onChange={(e) => setSuppCategory(e.target.value as any)}
+                    className="w-full min-h-[44px] px-3.5 py-2 rounded-xl text-xs sm:text-sm border border-[rgba(36,72,61,0.2)] bg-[#FFFDF7]"
+                  >
+                    <option value="Accommodations">Accommodations</option>
+                    <option value="Communication Preferences">Communication Preferences</option>
+                    <option value="Sensory Needs">Sensory Needs</option>
+                    <option value="Documented Educational Support">Documented Educational Support</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#3D6355] mb-1">
+                  Accommodation &amp; Support Plan Details
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="Describe authorized classroom support (e.g. 'Allow read-aloud option, tactile letter prompts, and calm presentation mode during quiet focus.')"
+                  value={suppDetails}
+                  onChange={(e) => setSuppDetails(e.target.value)}
+                  className="w-full p-3 rounded-xl text-xs sm:text-sm border border-[rgba(36,72,61,0.2)] bg-[#FFFDF7]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#3D6355] mb-1">
+                    Scheduled Review Date
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={suppReviewDate}
+                    onChange={(e) => setSuppReviewDate(e.target.value)}
+                    className="w-full min-h-[44px] px-3.5 py-2 rounded-xl text-xs sm:text-sm border border-[rgba(36,72,61,0.2)] bg-[#FFFDF7]"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button
+                    type="submit"
+                    className="min-h-[44px] w-full px-6 py-2.5 rounded-xl bg-[#4A248A] text-white hover:bg-[#3B1C70] font-bold text-xs sm:text-sm shadow-xs transition-colors focus:outline-none focus:ring-4 focus:ring-[#D5C2FE]"
+                  >
+                    Save Authorized Record
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          {/* List of Existing Support Records */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#3D6355]">
+              Active Protected Accommodations ({supportRecords.length})
+            </h4>
+
+            {supportRecords.length === 0 ? (
+              <div className="p-6 rounded-2xl bg-white border text-center text-xs text-[#3D6355]">
+                No protected support records on file for this learner.
+              </div>
+            ) : (
+              supportRecords.map((rec) => (
+                <div
+                  key={rec.id}
+                  className="p-5 rounded-2xl bg-white border-2 border-[rgba(36,72,61,0.12)] shadow-xs space-y-3"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-[#E8DEFF] text-[#4A248A]">
+                        {rec.category}
+                      </span>
+                      <span className="text-xs px-2 py-0.5 rounded-md bg-[#FFFBE6] text-[#664B00] border border-[#FCE58D] font-bold">
+                        {rec.lawfulBasis}
+                      </span>
+                    </div>
+                    <span className="text-xs font-medium text-[#3D6355]">
+                      Recorded: <strong>{rec.recordedAt}</strong> &bull; Next Review: <strong>{rec.reviewDate}</strong>
+                    </span>
+                  </div>
+
+                  <p className="text-xs sm:text-sm text-[#24483D] leading-relaxed font-medium">
+                    {rec.details}
+                  </p>
+
+                  <div className="text-xs text-[#3D6355] pt-1">
+                    <strong>Documented By:</strong> {rec.documentedBy}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}

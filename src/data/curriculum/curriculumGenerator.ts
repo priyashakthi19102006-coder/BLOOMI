@@ -427,6 +427,31 @@ function generateTasksForLevel(
       }
     }
 
+    const worldSkillMap: Record<WorldId, { domain: string; companion: string; methodList: string[] }> = {
+      writing: {
+        domain: 'Writing & Expression',
+        companion: 'Barnaby the Carnival Bear',
+        methodList: ['Touch Tap', 'Letter Placement', 'Word Ordering', 'Spoken Clue'],
+      },
+      speaking: {
+        domain: 'Communication & Food Discovery',
+        companion: 'Pip the Baker Bunny',
+        methodList: ['Picture Selection', 'Recipe Ordering', 'Audio Clue', 'AAC Card'],
+      },
+      visual: {
+        domain: 'Visual Discovery & Space',
+        companion: 'Nova the Star Fox',
+        methodList: ['Pattern Tap', 'Sequence Ordering', 'Visual Grid', 'High-Contrast View'],
+      },
+      social: {
+        domain: 'Social Understanding & Animals',
+        companion: 'Koa the Explorer Panda',
+        methodList: ['Emotion Card', 'Scenario Matching', 'Visual Empathy Cue'],
+      },
+    }
+
+    const worldSkill = worldSkillMap[worldId]
+
     tasks.push({
       id: taskId,
       levelId,
@@ -435,7 +460,12 @@ function generateTasksForLevel(
       instruction: `Explore step ${taskNum} of 5: ${theme.objective}`,
       taskType,
       data,
-      hint: `Hint for Level ${levelNumber}, Task ${taskNum}: Take your time! Read or listen to the options calmly.`,
+      hint: `Hint for Level ${levelNumber}, Task ${taskNum}: Take your time! Tap, listen, or think about ${theme.objective.toLowerCase()}`,
+      visualDemonstration: `Look closely at the clues for ${theme.title}. Choose the option that fits best!`,
+      spokenInstruction: `Step ${taskNum}. ${theme.objective}. Take your time and tap your answer when you are ready.`,
+      supportedResponseMethods: worldSkill.methodList,
+      skillsPracticed: [worldSkill.domain, 'Everyday Learning Focus'],
+      encouragementTip: `${worldSkill.companion} says: You are doing great exploring this level!`,
     })
   }
 
@@ -470,42 +500,62 @@ function generateLevelsForWorld(
 export const curriculumWorlds: Record<WorldId, CurriculumWorld> = {
   writing: {
     id: 'writing',
-    title: 'Writing World',
-    subtitle: 'Word Garden of Wonders',
-    description: 'Letters, handwriting, spelling, and sentence creation.',
+    title: 'Magic Amusement Park',
+    subtitle: 'Carnival Quests & Story Rollercoasters',
+    description: 'Letters, handwriting, spelling, carnival banners, and sentence creation.',
     accentColor: 'from-[#FFE0CC] to-[#FFCFB0]',
     bgLight: 'bg-[#FFF9F5]',
     borderColor: 'border-[#F8D2B8]',
+    magicalWorldName: 'Magic Amusement Park',
+    sceneTheme: 'amusement_park',
+    companionName: 'Barnaby the Carnival Bear',
+    skillDomains: ['Writing', 'Communication', 'Visual Discovery', 'Social Understanding'],
+    supportedResponseMethods: ['Touch Tap', 'Letter Placement', 'Word Ordering', 'Spoken Clue'],
     levels: generateLevelsForWorld('writing', writingThemes),
   },
   speaking: {
     id: 'speaking',
-    title: 'Speaking World',
-    subtitle: 'Echo Valley of Voices',
-    description: 'Listening discrimination, sounds, words, and expressive voice.',
+    title: 'Magic Food World',
+    subtitle: 'Chef Kitchen & Recipe Bakery',
+    description: 'Cooking clues, recipe ordering, food vocabulary, and expressive listening.',
     accentColor: 'from-[#E8DEFF] to-[#D5C2FE]',
     bgLight: 'bg-[#F9F6FF]',
     borderColor: 'border-[#D5C2FE]',
+    magicalWorldName: 'Magic Food World',
+    sceneTheme: 'food_world',
+    companionName: 'Pip the Baker Bunny',
+    skillDomains: ['Communication', 'Writing', 'Social Understanding', 'Visual Discovery'],
+    supportedResponseMethods: ['Picture Selection', 'Recipe Ordering', 'Audio Clue', 'AAC Card'],
     levels: generateLevelsForWorld('speaking', speakingThemes),
   },
   visual: {
     id: 'visual',
-    title: 'Visual Discovery',
-    subtitle: 'Prism Meadow Explorer',
-    description: 'Matching, patterns, spatial reasoning, and visual sequencing.',
+    title: 'Magic Space World',
+    subtitle: 'Cosmic Observatory & Rocket Paths',
+    description: 'Constellation matching, rocket patterns, spatial reasoning, and cosmic sequences.',
     accentColor: 'from-[#CDEFE0] to-[#B2E6CE]',
     bgLight: 'bg-[#F2FAF6]',
     borderColor: 'border-[#B2E6CE]',
+    magicalWorldName: 'Magic Space World',
+    sceneTheme: 'space_world',
+    companionName: 'Nova the Star Fox',
+    skillDomains: ['Visual Discovery', 'Social Understanding', 'Writing', 'Communication'],
+    supportedResponseMethods: ['Pattern Tap', 'Sequence Ordering', 'Visual Grid', 'High-Contrast View'],
     levels: generateLevelsForWorld('visual', visualThemes),
   },
   social: {
     id: 'social',
-    title: 'Social Adventure',
-    subtitle: 'Kindness Kingdom',
-    description: 'Emotions, greetings, communication choices, and teamwork.',
+    title: 'Magic Animal World',
+    subtitle: 'Safari Habitats & Creature Friends',
+    description: 'Animal emotions, safari communication choices, team cooperation, and kindness.',
     accentColor: 'from-[#FFF0B3] to-[#FDE58A]',
     bgLight: 'bg-[#FFFDF0]',
     borderColor: 'border-[#FCE58D]',
+    magicalWorldName: 'Magic Animal World',
+    sceneTheme: 'animal_world',
+    companionName: 'Koa the Explorer Panda',
+    skillDomains: ['Social Understanding', 'Communication', 'Writing', 'Visual Discovery'],
+    supportedResponseMethods: ['Emotion Card', 'Scenario Matching', 'Visual Empathy Cue'],
     levels: generateLevelsForWorld('social', socialThemes),
   },
 }

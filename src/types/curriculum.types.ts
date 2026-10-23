@@ -73,6 +73,11 @@ export interface CurriculumTask {
   taskType: TaskType
   data: TaskData
   hint?: string
+  visualDemonstration?: string
+  spokenInstruction?: string
+  supportedResponseMethods?: string[]
+  skillsPracticed?: string[]
+  encouragementTip?: string
 }
 
 export interface CurriculumLevel {
@@ -96,6 +101,11 @@ export interface CurriculumWorld {
   bgLight: string
   borderColor: string
   levels: CurriculumLevel[] // exactly 50 levels
+  magicalWorldName?: string
+  skillDomains?: string[]
+  supportedResponseMethods?: string[]
+  sceneTheme?: 'amusement_park' | 'food_world' | 'animal_world' | 'space_world'
+  companionName?: string
 }
 
 export type LevelStatus = 'locked' | 'available' | 'completed'

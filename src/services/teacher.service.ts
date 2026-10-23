@@ -57,6 +57,17 @@ export interface SupportSuggestion {
   strategyRationale: string
 }
 
+export interface SensitiveSupportRecord {
+  id: string
+  studentId: string
+  documentedBy: string
+  recordedAt: string
+  lawfulBasis: 'Parent Consent' | 'IEP Education Plan' | 'Specialist Assessment'
+  category: 'Accommodations' | 'Communication Preferences' | 'Sensory Needs' | 'Documented Educational Support'
+  details: string
+  reviewDate: string
+}
+
 export interface StudentLearningReport {
   student: EnrolledStudent
   progress: StudentCurriculumProgress
@@ -74,11 +85,36 @@ export interface StudentLearningReport {
   }[]
   observations: TeacherObservation[]
   suggestions: SupportSuggestion[]
+  supportRecords: SensitiveSupportRecord[]
 }
 
 const DEMO_TEACHER_ID = 'demo_teacher_id'
 const DEMO_CLASS_ID = 'demo_class_3a'
 const DEMO_OBSERVATIONS_KEY = 'bloomi_demo_teacher_observations_'
+const DEMO_SUPPORT_RECORDS_KEY = 'bloomi_demo_support_records_'
+
+const DEFAULT_DEMO_SUPPORT_RECORDS: SensitiveSupportRecord[] = [
+  {
+    id: 'supp_alex_1',
+    studentId: 'demo_student',
+    documentedBy: 'Dr. Helen Rostova (School Educational Specialist)',
+    recordedAt: '2026-09-15',
+    lawfulBasis: 'IEP Education Plan',
+    category: 'Accommodations',
+    details: 'Visual clarity accommodation: Provide soft high contrast, large text option, and unlimited processing time without countdown timers.',
+    reviewDate: '2027-01-15',
+  },
+  {
+    id: 'supp_alex_2',
+    studentId: 'demo_student',
+    documentedBy: 'Maria Rivers (Parent/Guardian Consent on file)',
+    recordedAt: '2026-09-02',
+    lawfulBasis: 'Parent Consent',
+    category: 'Communication Preferences',
+    details: 'Learner responds well to spoken audio instructions alongside visual demonstration cards.',
+    reviewDate: '2027-06-01',
+  },
+]
 
 // Resilient memory store when running in Node.js test environments or SSR
 const inMemoryObservationsStorage = new Map<string, string>()
@@ -421,6 +457,9 @@ export const teacherService = {
     // Retrieve recorded teacher observations
     const observations = this.getStudentObservations(teacherId, studentId)
 
+    // Retrieve sensitive support records (accommodations, IEP notes)
+    const supportRecords = this.getSensitiveSupportRecords(teacherId, studentId)
+
     return {
       authorized: true,
       report: {
@@ -433,6 +472,7 @@ export const teacherService = {
         timeline,
         observations,
         suggestions,
+        supportRecords,
       },
     }
   },
@@ -609,5 +649,117 @@ export const teacherService = {
         error: `Failed to save observation: ${String(e)}`,
       }
     }
+  },
+
+  getSensitiveSupportRecords(teacherId: string, studentId: string): SensitiveSupportRecord[] {
+    if (!this.isTeacherAuthorizedForStudent(teacherId, studentId)) return []
+
+    const storageKey = `${DEMO_SUPPORT_RECORDS_KEY}${studentId}`
+    const stored = getObservationsStorage(storageKey)
+    if (stored) {
+      try {
+        return JSON.parse(stored) as SensitiveSupportRecord[]
+      } catch {
+        // fallback
+      }
+    }
+
+    if (studentId === 'demo_student') {
+      return DEFAULT_DEMO_SUPPORT_RECORDS
+    }
+    return []
+  },
+
+  addSensitiveSupportRecord(
+    teacherId: string,
+    studentId: string,
+    data: Omit<SensitiveSupportRecord, 'id'>
+  ): { success: boolean; record?: SensitiveSupportRecord; error?: string } {
+    if (!this.isTeacherAuthorizedForStudent(teacherId, studentId)) {
+      return { success: false, error: 'Unauthorized to add support records for this student.' }
+    }
+
+    const newRecord: SensitiveSupportRecord = {
+      id: `supp_${Date.now()}`,
+      studentId,
+      documentedBy: data.documentedBy.trim(),
+      recordedAt: data.recordedAt || new Date().toISOString().split('T')[0],
+      lawfulBasis: data.lawfulBasis,
+      category: data.category,
+      details: data.details.trim(),
+      reviewDate: data.reviewDate,
+    }
+
+    const existing = this.getSensitiveSupportRecords(teacherId, studentId)
+    const updated = [newRecord, ...existing]
+    const storageKey = `${DEMO_SUPPORT_RECORDS_KEY}${studentId}`
+    setObservationsStorage(storageKey, JSON.stringify(updated))
+
+    return { success: true, record: newRecord }
+  },
+
+  exportReportToText(report: StudentLearningReport): string {
+    const lines: string[] = [
+      `=======================================================`,
+      `BLOOMI INCLUSIVE EDUCATIONAL LEARNING REPORT`,
+      `=======================================================`,
+      `Student Name: ${report.student.displayName}`,
+      `Registration ID: ${report.student.registrationNumber}`,
+      `Grade Level: Grade ${report.student.gradeLevel}`,
+      `Classroom: ${report.student.className} (${report.student.classCode})`,
+      `Report Generated: ${new Date().toLocaleDateString()}`,
+      `Total Bloom Stars: ${report.rewardSummary.totalStars}`,
+      `Levels Completed: ${report.rewardSummary.totalCompletedLevels}`,
+      ``,
+      `IMPORTANT NOTICE:`,
+      `BLOOMI is an educational learning support tool, not a diagnostic medical`,
+      `device. All recorded evidence reflects observable task completion and`,
+      `pedagogical strategies. It does not infer medical conditions or severity.`,
+      ``,
+      `--- DEMONSTRATED PROGRESS ACROSS MAGICAL WORLDS ---`,
+    ]
+
+    Object.values(report.worldSummaries).forEach((w) => {
+      lines.push(`* ${w.title}: Level ${w.currentLevelNumber}/50 (${w.completedLevels} completed, ${w.percentage}%)`)
+    })
+
+    lines.push(``, `--- FACTUAL DEMONSTRATED SUCCESSES ---`)
+    report.demonstratedSuccesses.forEach((s) => lines.push(`* ${s}`))
+
+    lines.push(``, `--- AREAS FOR ADDITIONAL PRACTICE ---`)
+    report.areasForGrowth.forEach((a) => lines.push(`* ${a}`))
+
+    lines.push(``, `--- TEACHER OBSERVATIONS (${report.observations.length}) ---`)
+    if (report.observations.length === 0) {
+      lines.push(`(No teacher observations recorded yet.)`)
+    } else {
+      report.observations.forEach((o) => {
+        lines.push(`[${o.observationDate}] ${o.activityContext}: ${o.observedContent}`)
+        if (o.strategyTried) lines.push(`  Strategy tried: ${o.strategyTried}`)
+        if (o.followUpNotes) lines.push(`  Follow-up notes: ${o.followUpNotes}`)
+      })
+    }
+
+    lines.push(``, `--- SENSITIVE DOCUMENTED SUPPORT & ACCOMMODATIONS ---`)
+    if (!report.supportRecords || report.supportRecords.length === 0) {
+      lines.push(`(No sensitive support records on file.)`)
+    } else {
+      report.supportRecords.forEach((r) => {
+        lines.push(`* [${r.category}] Basis: ${r.lawfulBasis}`)
+        lines.push(`  Documented By: ${r.documentedBy} on ${r.recordedAt}`)
+        lines.push(`  Details: ${r.details}`)
+        lines.push(`  Next Review Date: ${r.reviewDate}`)
+      })
+    }
+
+    lines.push(``, `--- NON-DIAGNOSTIC EDUCATIONAL RECOMMENDATIONS ---`)
+    report.suggestions.forEach((s) => {
+      lines.push(`* ${s.activityArea}: ${s.suggestion}`)
+      lines.push(`  Observed Evidence: ${s.evidence}`)
+      lines.push(`  Pedagogical Rationale: ${s.strategyRationale}`)
+    })
+
+    lines.push(``, `=======================================================`)
+    return lines.join('\n')
   },
 }

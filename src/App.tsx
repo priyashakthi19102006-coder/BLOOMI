@@ -22,8 +22,10 @@ export const App: React.FC = () => {
           {/* Public Routes */}
           <Route index element={<HomePage />} />
           <Route path="login" element={<Navigate to="/login/student" replace />} />
-          <Route path="login/student" element={<StudentLoginPage />} />
+          <Route path="login/student" element={<StudentLoginPage initialMode="signin" />} />
           <Route path="login/teacher" element={<TeacherLoginPage />} />
+          <Route path="signup" element={<Navigate to="/signup/student" replace />} />
+          <Route path="signup/student" element={<StudentLoginPage initialMode="signup" />} />
           <Route path="worlds/:worldId" element={<WorldDetailsPage />} />
 
           {/* Protected Educator Routes */}

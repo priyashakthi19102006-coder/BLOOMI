@@ -164,5 +164,60 @@ describe('BLOOMI Teacher Portal & Student Management (Stage 07)', () => {
         expect(sug.strategyRationale).toBeTruthy()
       })
     })
+
+    it('manages protected sensitive support records with lawful basis and source attribution', () => {
+      // 1. Authorized retrieval of sensitive support records
+      const records = teacherService.getSensitiveSupportRecords(TEACHER_ID, AUTHORIZED_STUDENT_ID)
+      expect(records.length).toBeGreaterThanOrEqual(1)
+      const first = records[0]
+      expect(first.documentedBy).toBeTruthy()
+      expect(first.lawfulBasis).toBeTruthy()
+      expect(first.category).toBeTruthy()
+      expect(first.reviewDate).toBeTruthy()
+
+      // 2. Strict isolation: rejects unauthorized student
+      const unauthRecords = teacherService.getSensitiveSupportRecords(TEACHER_ID, UNAUTHORIZED_STUDENT_ID)
+      expect(unauthRecords).toHaveLength(0)
+
+      // 3. Adding an authorized support record
+      const addResult = teacherService.addSensitiveSupportRecord(TEACHER_ID, AUTHORIZED_STUDENT_ID, {
+        studentId: AUTHORIZED_STUDENT_ID,
+        documentedBy: 'Ms. Clara Vance (Classroom Teacher)',
+        recordedAt: '2026-10-23',
+        lawfulBasis: 'Parent Consent',
+        category: 'Accommodations',
+        details: 'Calm presentation mode with tactile cues enabled.',
+        reviewDate: '2027-02-01',
+      })
+      expect(addResult.success).toBe(true)
+      expect(addResult.record?.details).toContain('Calm presentation mode')
+
+      // 4. Rejecting support record insertion for unauthorized student
+      const unauthAdd = teacherService.addSensitiveSupportRecord(TEACHER_ID, UNAUTHORIZED_STUDENT_ID, {
+        studentId: UNAUTHORIZED_STUDENT_ID,
+        documentedBy: 'Teacher',
+        recordedAt: '2026-10-23',
+        lawfulBasis: 'Parent Consent',
+        category: 'Accommodations',
+        details: 'Unauthorized attempt',
+        reviewDate: '2027-02-01',
+      })
+      expect(unauthAdd.success).toBe(false)
+      expect(unauthAdd.error).toContain('Unauthorized')
+    })
+
+    it('exports a transparent, non-diagnostic text report with clear separation of observed facts and support plans', async () => {
+      const result = await teacherService.getStudentLearningReport(TEACHER_ID, AUTHORIZED_STUDENT_ID)
+      const report = result.report!
+
+      const text = teacherService.exportReportToText(report)
+      expect(text).toContain('BLOOMI INCLUSIVE EDUCATIONAL LEARNING REPORT')
+      expect(text).toContain('Alex Rivers')
+      expect(text).toContain('BLOOMI is an educational learning support tool, not a diagnostic medical')
+      expect(text).toContain('--- DEMONSTRATED PROGRESS ACROSS MAGICAL WORLDS ---')
+      expect(text).toContain('--- FACTUAL DEMONSTRATED SUCCESSES ---')
+      expect(text).toContain('--- SENSITIVE DOCUMENTED SUPPORT & ACCOMMODATIONS ---')
+    })
   })
 })
+

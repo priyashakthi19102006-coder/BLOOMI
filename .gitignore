@@ -22,6 +22,8 @@ dist-ssr
 .env
 .env.*
 !.env.example
+!.env.example.local
+supabase/.temp/
 
 # Editor / IDE configuration
 .vscode/*
@@ -37,3 +39,6 @@ Thumbs.db
 
 # Preserved prior folders
 learniverse
+
+# Local maintenance and inspection scripts
+scripts/
