@@ -11,11 +11,12 @@ import {
   Info,
   Loader2,
   Sparkles,
+  CheckCircle,
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
 export const TeacherLoginPage: React.FC = () => {
-  const { loginTeacher, signUpTeacher, loginDemoTeacher, isConfigured, isLoading: authLoading } = useAuth()
+  const { loginTeacher, signUpTeacher, isConfigured, isLoading: authLoading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -133,88 +134,80 @@ export const TeacherLoginPage: React.FC = () => {
     }
   }
 
-  const handleLaunchOfflineDemo = () => {
-    loginDemoTeacher()
-    const targetDestination = (location.state as any)?.from?.pathname || '/teacher/dashboard'
-    navigate(targetDestination, { replace: true })
-  }
-
   return (
     <div className="max-w-xl mx-auto py-4 sm:py-8 space-y-6">
       <Link
         to="/"
-        className="min-h-[44px] inline-flex items-center gap-2 text-sm font-bold text-[#24483D] hover:text-[#16563F] transition-colors focus:outline-none focus:ring-2 focus:ring-[#24483D] rounded-xl px-2 py-1"
+        className="min-h-[44px] inline-flex items-center gap-2 text-sm font-bold text-[#d8b4fe] hover:text-[#ff2a85] transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff2a85] rounded-xl px-2 py-1"
       >
         <ArrowLeft className="w-4 h-4" aria-hidden="true" />
         <span>Back to Learning Worlds</span>
       </Link>
 
-      <div className="rounded-3xl p-6 sm:p-10 border-2 transition-all bg-white border-[rgba(36,72,61,0.12)] shadow-xs">
-        {/* Header */}
+      <div className="rounded-3xl p-6 sm:p-10 border-2 transition-all bg-[#0e0520] border-[#a855f7]/40 shadow-[0_0_40px_rgba(168,85,247,0.25)] text-[#fdf4ff]">
+        {/* Header Icon */}
         <div className="text-center space-y-2 mb-6">
-          <div className="w-16 h-16 mx-auto rounded-3xl bg-[#F7F4FF] border border-[#D5C2FE] text-[#4A248A] flex items-center justify-center shadow-xs">
-            <GraduationCap className="w-8 h-8" aria-hidden="true" />
+          <div className="w-16 h-16 mx-auto rounded-3xl bg-[#160a33] border-2 border-[#a855f7]/50 flex items-center justify-center shadow-[0_0_20px_rgba(168,85,247,0.4)]">
+            <GraduationCap className="w-8 h-8 text-[#00f5ff]" aria-hidden="true" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold font-fredoka text-[#24483D]">
+          <h1 className="text-2xl sm:text-3xl font-extrabold font-fredoka neon-text-purple">
             Educator &amp; Specialist Portal
           </h1>
-          <p className="text-sm text-[#3D6355] font-medium">
-            Manage Grade 3 classroom rosters, evidence-based learning records, and student support plans.
+          <p className="text-sm text-[#d8b4fe] font-medium max-w-sm mx-auto">
+            Authorized access to classroom rosters, genuine student learning progress, and inclusive observations.
           </p>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="grid grid-cols-2 p-1.5 rounded-2xl bg-[#F7F4FF] border border-[#D5C2FE] mb-6">
+        {/* Tab Toggle: Sign In vs Verified Onboarding */}
+        <div
+          role="tablist"
+          aria-label="Educator Access"
+          className="grid grid-cols-2 p-1.5 rounded-2xl bg-[#160a33] border-2 border-[#a855f7]/30 mb-6 gap-1"
+        >
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'signin'}
             onClick={() => {
               setActiveTab('signin')
               setLocalError(null)
               setLocalSuccess(null)
             }}
-            className={`min-h-[44px] py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all ${
+            className={`min-h-[44px] py-2.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-[#a855f7] ${
               activeTab === 'signin'
-                ? 'bg-white text-[#4A248A] shadow-xs'
-                : 'text-[#4A248A]/70 hover:text-[#4A248A]'
+                ? 'bg-[#a855f7] text-white shadow-[0_0_15px_rgba(168,85,247,0.8)]'
+                : 'text-[#d8b4fe] hover:text-white'
             }`}
           >
-            Educator Sign In
+            <span>Educator Sign In</span>
           </button>
+
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'onboard'}
             onClick={() => {
               setActiveTab('onboard')
               setLocalError(null)
               setLocalSuccess(null)
             }}
-            className={`min-h-[44px] py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all ${
+            className={`min-h-[44px] py-2.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-[#a855f7] ${
               activeTab === 'onboard'
-                ? 'bg-white text-[#4A248A] shadow-xs'
-                : 'text-[#4A248A]/70 hover:text-[#4A248A]'
+                ? 'bg-[#a855f7] text-white shadow-[0_0_15px_rgba(168,85,247,0.8)]'
+                : 'text-[#d8b4fe] hover:text-white'
             }`}
           >
-            Verified Onboarding
+            <span>School Onboarding</span>
           </button>
         </div>
 
         {/* Configuration Notice if Supabase is unconfigured */}
         {!isConfigured && (
-          <div className="mb-6 p-4 rounded-2xl bg-[#FFFBE6] border border-[#FCE58D] flex items-start gap-3 text-xs text-[#664B00]">
-            <Info className="w-5 h-5 text-[#8A6400] shrink-0 mt-0.5" aria-hidden="true" />
+          <div className="mb-6 p-4 rounded-2xl bg-amber-950/40 border border-amber-600/60 flex items-start gap-3 text-xs text-amber-200">
+            <Info className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
             <div>
-              <span className="font-bold">Backend Configuration Notice:</span> Supabase environment variables are currently set to placeholders. Add your project credentials to <code>.env.local</code> to authenticate against a live database.
+              <span className="font-bold">Backend Configuration Notice:</span> Supabase environment variables are missing. Live educator sign-in requires <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in <code>.env.local</code>.
             </div>
-          </div>
-        )}
-
-        {/* Success Alert */}
-        {localSuccess && (
-          <div
-            role="status"
-            className="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm font-bold flex items-center gap-3"
-          >
-            <Sparkles className="w-5 h-5 text-emerald-600 shrink-0" aria-hidden="true" />
-            <div>{localSuccess}</div>
           </div>
         )}
 
@@ -223,22 +216,34 @@ export const TeacherLoginPage: React.FC = () => {
           <div
             role="alert"
             aria-live="assertive"
-            className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm flex items-start gap-3"
+            className="mb-6 p-4 rounded-2xl bg-rose-950/50 border border-rose-500/60 text-rose-200 text-xs sm:text-sm flex items-start gap-3 shadow-[0_0_15px_rgba(244,63,94,0.3)]"
           >
-            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" aria-hidden="true" />
+            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" aria-hidden="true" />
             <div className="font-semibold">{localError}</div>
           </div>
         )}
 
-        {activeTab === 'signin' ? (
-          <form onSubmit={handleSignIn} className="space-y-5">
-            {/* Email Address */}
+        {/* Success Alert */}
+        {localSuccess && (
+          <div
+            role="status"
+            className="mb-6 p-4 rounded-2xl bg-emerald-950/50 border border-emerald-500/60 text-emerald-200 text-xs sm:text-sm flex items-start gap-3 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+          >
+            <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" aria-hidden="true" />
+            <div className="font-semibold">{localSuccess}</div>
+          </div>
+        )}
+
+        {/* SIGN IN FORM */}
+        {activeTab === 'signin' && (
+          <form onSubmit={handleSignIn} className="space-y-4">
+            {/* Email Field */}
             <div>
               <label
                 htmlFor="teacher-email"
-                className="block text-xs font-extrabold uppercase tracking-wider text-[#3D6355] mb-2"
+                className="block text-xs font-extrabold uppercase tracking-wider text-[#d8b4fe] mb-1.5"
               >
-                School or Specialist Email
+                School Email Address
               </label>
               <div className="relative">
                 <input
@@ -249,20 +254,20 @@ export const TeacherLoginPage: React.FC = () => {
                   placeholder="educator@school.edu"
                   disabled={isSubmitting}
                   autoComplete="email"
-                  className="w-full min-h-[48px] px-4 py-3 pl-10 rounded-xl border border-[rgba(36,72,61,0.25)] text-[#24483D] placeholder-[#3D6355]/40 font-medium focus:outline-none focus:ring-3 focus:ring-[#24483D] bg-[#FFFDF7]"
+                  className="w-full min-h-[48px] px-4 py-3 pl-10 rounded-xl border border-[#a855f7]/40 text-white placeholder-[#9382ad] font-medium focus:outline-none focus:ring-3 focus:ring-[#a855f7] focus:border-[#a855f7] bg-[#160a33]"
                   required
                 />
-                <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-[#3D6355]" aria-hidden="true" />
+                <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-[#00f5ff]" aria-hidden="true" />
               </div>
             </div>
 
-            {/* Password with Show/Hide Toggle */}
+            {/* Password Field */}
             <div>
               <label
                 htmlFor="teacher-password"
-                className="block text-xs font-extrabold uppercase tracking-wider text-[#3D6355] mb-2"
+                className="block text-xs font-extrabold uppercase tracking-wider text-[#d8b4fe] mb-1.5"
               >
-                Password
+                Account Password
               </label>
               <div className="relative">
                 <input
@@ -270,18 +275,18 @@ export const TeacherLoginPage: React.FC = () => {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
+                  placeholder="••••••••"
                   disabled={isSubmitting}
                   autoComplete="current-password"
-                  className="w-full min-h-[48px] px-4 py-3 pl-10 pr-12 rounded-xl border border-[rgba(36,72,61,0.25)] text-[#24483D] placeholder-[#3D6355]/40 font-medium focus:outline-none focus:ring-3 focus:ring-[#24483D] bg-[#FFFDF7]"
+                  className="w-full min-h-[48px] px-4 py-3 pl-10 pr-12 rounded-xl border border-[#a855f7]/40 text-white placeholder-[#9382ad] font-medium focus:outline-none focus:ring-3 focus:ring-[#a855f7] focus:border-[#a855f7] bg-[#160a33]"
                   required
                 />
-                <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-[#3D6355]" aria-hidden="true" />
+                <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-[#00f5ff]" aria-hidden="true" />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="min-h-[44px] min-w-[44px] absolute right-1.5 top-0.5 flex items-center justify-center rounded-lg text-[#3D6355] hover:text-[#24483D] hover:bg-[rgba(36,72,61,0.06)] focus:outline-none focus:ring-2 focus:ring-[#24483D]"
+                  className="min-h-[44px] min-w-[44px] absolute right-1.5 top-0.5 flex items-center justify-center rounded-lg text-[#d8b4fe] hover:text-white hover:bg-[#a855f7]/20 focus:outline-none focus:ring-2 focus:ring-[#a855f7]"
                 >
                   {showPassword ? (
                     <EyeOff className="w-4 h-4" aria-hidden="true" />
@@ -296,31 +301,34 @@ export const TeacherLoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting || authLoading}
-              className="w-full min-h-[50px] py-3.5 rounded-2xl font-bold text-white bg-[#4A248A] hover:bg-[#3B1C70] shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-[#D5C2FE]"
+              className="w-full min-h-[50px] py-3.5 rounded-2xl font-bold text-white btn-neon-purple shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-[#a855f7]"
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
-                  <span>Verifying Credentials...</span>
+                  <span>Verifying Educator Authorization...</span>
                 </>
               ) : (
-                <span>Sign In to Educator Dashboard</span>
+                <span>Access Educator Dashboard</span>
               )}
             </button>
           </form>
-        ) : (
+        )}
+
+        {/* VERIFIED ONBOARDING FORM */}
+        {activeTab === 'onboard' && (
           <form onSubmit={handleOnboard} className="space-y-4">
-            <div className="p-3 rounded-xl bg-[#F7F4FF] border border-[#D5C2FE] text-xs text-[#4A248A]">
-              <strong>Verified School Flow:</strong> Requires an approved school code (e.g. <code>BLOOMI-TEACH-2026</code>) to verify educational affiliation.
+            <div className="p-3.5 rounded-2xl bg-[#160a33] border border-[#00f5ff]/30 text-xs text-[#d8b4fe] space-y-1">
+              <span className="font-bold text-[#00f5ff]">School Verification Required:</span> Public registration cannot self-elevate to teacher without an approved school administrator code.
             </div>
 
-            {/* Full Name */}
+            {/* Display Name */}
             <div>
               <label
                 htmlFor="onboard-name"
-                className="block text-xs font-extrabold uppercase tracking-wider text-[#3D6355] mb-1.5"
+                className="block text-xs font-extrabold uppercase tracking-wider text-[#d8b4fe] mb-1.5"
               >
-                Educator Name &amp; Title
+                Full Name &amp; Title
               </label>
               <input
                 id="onboard-name"
@@ -329,7 +337,7 @@ export const TeacherLoginPage: React.FC = () => {
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="Ms. Clara Vance"
                 disabled={isSubmitting}
-                className="w-full min-h-[46px] px-4 py-2.5 rounded-xl border border-[rgba(36,72,61,0.25)] text-[#24483D] placeholder-[#3D6355]/40 font-medium focus:outline-none focus:ring-3 focus:ring-[#4A248A] bg-[#FFFDF7]"
+                className="w-full min-h-[46px] px-4 py-2.5 rounded-xl border border-[#a855f7]/40 text-white placeholder-[#9382ad] font-medium focus:outline-none focus:ring-3 focus:ring-[#a855f7] bg-[#160a33]"
                 required
               />
             </div>
@@ -338,9 +346,9 @@ export const TeacherLoginPage: React.FC = () => {
             <div>
               <label
                 htmlFor="onboard-school"
-                className="block text-xs font-extrabold uppercase tracking-wider text-[#3D6355] mb-1.5"
+                className="block text-xs font-extrabold uppercase tracking-wider text-[#d8b4fe] mb-1.5"
               >
-                School or District Name
+                School / Learning Center
               </label>
               <input
                 id="onboard-school"
@@ -349,7 +357,7 @@ export const TeacherLoginPage: React.FC = () => {
                 onChange={(e) => setSchoolName(e.target.value)}
                 placeholder="Maple Glen Elementary (Grade 3)"
                 disabled={isSubmitting}
-                className="w-full min-h-[46px] px-4 py-2.5 rounded-xl border border-[rgba(36,72,61,0.25)] text-[#24483D] placeholder-[#3D6355]/40 font-medium focus:outline-none focus:ring-3 focus:ring-[#4A248A] bg-[#FFFDF7]"
+                className="w-full min-h-[46px] px-4 py-2.5 rounded-xl border border-[#a855f7]/40 text-white placeholder-[#9382ad] font-medium focus:outline-none focus:ring-3 focus:ring-[#a855f7] bg-[#160a33]"
                 required
               />
             </div>
@@ -358,7 +366,7 @@ export const TeacherLoginPage: React.FC = () => {
             <div>
               <label
                 htmlFor="onboard-email"
-                className="block text-xs font-extrabold uppercase tracking-wider text-[#3D6355] mb-1.5"
+                className="block text-xs font-extrabold uppercase tracking-wider text-[#d8b4fe] mb-1.5"
               >
                 School Email Address
               </label>
@@ -369,7 +377,7 @@ export const TeacherLoginPage: React.FC = () => {
                 onChange={(e) => setOnboardEmail(e.target.value)}
                 placeholder="c.vance@mapleglen.edu"
                 disabled={isSubmitting}
-                className="w-full min-h-[46px] px-4 py-2.5 rounded-xl border border-[rgba(36,72,61,0.25)] text-[#24483D] placeholder-[#3D6355]/40 font-medium focus:outline-none focus:ring-3 focus:ring-[#4A248A] bg-[#FFFDF7]"
+                className="w-full min-h-[46px] px-4 py-2.5 rounded-xl border border-[#a855f7]/40 text-white placeholder-[#9382ad] font-medium focus:outline-none focus:ring-3 focus:ring-[#a855f7] bg-[#160a33]"
                 required
               />
             </div>
@@ -380,14 +388,14 @@ export const TeacherLoginPage: React.FC = () => {
                 <div className="flex items-center justify-between mb-1.5">
                   <label
                     htmlFor="onboard-pwd"
-                    className="block text-xs font-extrabold uppercase tracking-wider text-[#3D6355]"
+                    className="block text-xs font-extrabold uppercase tracking-wider text-[#d8b4fe]"
                   >
                     Password
                   </label>
                   <button
                     type="button"
                     onClick={() => setShowOnboardPassword(!showOnboardPassword)}
-                    className="text-[11px] font-bold text-[#4A248A] hover:underline"
+                    className="text-[11px] font-bold text-[#00f5ff] hover:underline"
                   >
                     {showOnboardPassword ? 'Hide' : 'Show'}
                   </button>
@@ -399,7 +407,7 @@ export const TeacherLoginPage: React.FC = () => {
                   onChange={(e) => setOnboardPassword(e.target.value)}
                   placeholder="Min 6 characters"
                   disabled={isSubmitting}
-                  className="w-full min-h-[46px] px-3.5 py-2.5 rounded-xl border border-[rgba(36,72,61,0.25)] text-[#24483D] font-medium focus:outline-none focus:ring-3 focus:ring-[#4A248A] bg-[#FFFDF7]"
+                  className="w-full min-h-[46px] px-3.5 py-2.5 rounded-xl border border-[#a855f7]/40 text-white font-medium focus:outline-none focus:ring-3 focus:ring-[#a855f7] bg-[#160a33]"
                   required
                 />
               </div>
@@ -407,7 +415,7 @@ export const TeacherLoginPage: React.FC = () => {
               <div>
                 <label
                   htmlFor="onboard-confirm-pwd"
-                  className="block text-xs font-extrabold uppercase tracking-wider text-[#3D6355] mb-1.5"
+                  className="block text-xs font-extrabold uppercase tracking-wider text-[#d8b4fe] mb-1.5"
                 >
                   Confirm Password
                 </label>
@@ -418,7 +426,7 @@ export const TeacherLoginPage: React.FC = () => {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Repeat password"
                   disabled={isSubmitting}
-                  className="w-full min-h-[46px] px-3.5 py-2.5 rounded-xl border border-[rgba(36,72,61,0.25)] text-[#24483D] font-medium focus:outline-none focus:ring-3 focus:ring-[#4A248A] bg-[#FFFDF7]"
+                  className="w-full min-h-[46px] px-3.5 py-2.5 rounded-xl border border-[#a855f7]/40 text-white font-medium focus:outline-none focus:ring-3 focus:ring-[#a855f7] bg-[#160a33]"
                   required
                 />
               </div>
@@ -428,7 +436,7 @@ export const TeacherLoginPage: React.FC = () => {
             <div>
               <label
                 htmlFor="onboard-code"
-                className="block text-xs font-extrabold uppercase tracking-wider text-[#3D6355] mb-1.5"
+                className="block text-xs font-extrabold uppercase tracking-wider text-[#d8b4fe] mb-1.5"
               >
                 School Invitation / District Code
               </label>
@@ -439,10 +447,10 @@ export const TeacherLoginPage: React.FC = () => {
                 onChange={(e) => setInvitationCode(e.target.value.toUpperCase())}
                 placeholder="BLOOMI-TEACH-2026"
                 disabled={isSubmitting}
-                className="w-full min-h-[46px] px-4 py-2.5 rounded-xl border border-[rgba(36,72,61,0.25)] text-[#24483D] font-mono font-bold tracking-wider focus:outline-none focus:ring-3 focus:ring-[#4A248A] bg-[#FFFDF7]"
+                className="w-full min-h-[46px] px-4 py-2.5 rounded-xl border border-[#a855f7]/40 text-[#ffd700] font-mono font-bold tracking-wider focus:outline-none focus:ring-3 focus:ring-[#a855f7] bg-[#160a33]"
                 required
               />
-              <p className="text-[11px] text-[#3D6355] mt-1">
+              <p className="text-[11px] text-[#d8b4fe] mt-1">
                 Issued by your school administrator. Standard educator code: <code>BLOOMI-TEACH-2026</code>
               </p>
             </div>
@@ -451,7 +459,7 @@ export const TeacherLoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting || authLoading}
-              className="w-full min-h-[50px] py-3.5 rounded-2xl font-bold text-white bg-[#4A248A] hover:bg-[#3B1C70] shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-[#D5C2FE]"
+              className="w-full min-h-[50px] py-3.5 rounded-2xl font-bold text-white btn-neon-purple shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-[#a855f7]"
             >
               {isSubmitting ? (
                 <>
@@ -466,38 +474,15 @@ export const TeacherLoginPage: React.FC = () => {
         )}
 
         {/* Student Hub link */}
-        <div className="mt-6 pt-4 border-t border-[rgba(36,72,61,0.08)] flex items-center justify-between flex-wrap gap-2 text-xs text-[#3D6355]">
+        <div className="mt-8 pt-4 border-t border-[#a855f7]/20 flex items-center justify-between flex-wrap gap-2 text-xs text-[#d8b4fe]">
           <span>Student accounts must sign in via the Student Adventure Portal.</span>
           <Link
             to="/login/student"
-            className="inline-flex items-center gap-1 font-bold text-[#4A248A] hover:underline"
+            className="inline-flex items-center gap-1 font-bold text-[#ff2a85] hover:text-white hover:underline"
           >
             <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
             <span>Student Hub Sign In</span>
           </Link>
-        </div>
-
-        {/* Explicitly Labelled Development / Evaluation Flow */}
-        <div className="mt-8 pt-6 border-t border-[rgba(36,72,61,0.12)] space-y-3">
-          <div className="p-4 rounded-2xl bg-[#FFFDF7] border-2 border-dashed border-[#D5C2FE] text-xs space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded-md bg-[#E8DEFF] font-black uppercase text-[10px] tracking-wider text-[#4A248A] border border-[#D5C2FE]">
-                Offline Preview
-              </span>
-              <span className="font-extrabold text-[#4A248A]">Developer / Evaluation Flow Only</span>
-            </div>
-            <p className="text-[11px] leading-relaxed text-[#3D6355]">
-              To evaluate the Educator Dashboard and student learning reports offline without active Supabase credentials, you can enter using this mock demo educator session. This runs entirely in-memory and does not connect to or authenticate against a remote database.
-            </p>
-            <button
-              type="button"
-              onClick={handleLaunchOfflineDemo}
-              className="min-h-[44px] w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-[#D5C2FE] bg-[#F7F4FF] hover:bg-[#E8DEFF] text-[#4A248A] text-xs font-black transition-colors focus:outline-none focus:ring-3 focus:ring-[#4A248A]"
-            >
-              <GraduationCap className="w-4 h-4 text-[#4A248A]" aria-hidden="true" />
-              <span>Launch Offline Demo Educator Session (Ms. Clara Vance · Room 3-A)</span>
-            </button>
-          </div>
         </div>
       </div>
     </div>

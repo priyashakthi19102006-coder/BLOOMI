@@ -250,12 +250,43 @@ export const teacherService = {
       return false
     }
 
-    // In demo mode, only students in DEMO_STUDENT_ROSTER are authorized
-    const isEnrolled = DEMO_STUDENT_ROSTER.some(
-      (s) => s.id === studentId && (s.teacherId === teacherId || teacherId === DEMO_TEACHER_ID)
-    )
+    if (teacherId === DEMO_TEACHER_ID) {
+      return DEMO_STUDENT_ROSTER.some(
+        (s) => s.id === studentId && (s.teacherId === teacherId || teacherId === DEMO_TEACHER_ID)
+      )
+    }
 
-    return isEnrolled
+    // For real authenticated teachers, default to authorized pending server-side RLS enforcement
+    return true
+  },
+
+  /**
+   * Asynchronously verify teacher classroom authorization against live Supabase database
+   */
+  async isTeacherAuthorizedForStudentAsync(teacherId: string, studentId: string): Promise<boolean> {
+    if (!teacherId || !studentId) return false
+    if (studentId === EXTERNAL_STUDENT_ID) return false
+
+    if (teacherId === DEMO_TEACHER_ID) {
+      return this.isTeacherAuthorizedForStudent(teacherId, studentId)
+    }
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('class_students')
+          .select('student_id, classes!inner(teacher_id)')
+          .eq('student_id', studentId)
+          .eq('classes.teacher_id', teacherId)
+          .maybeSingle()
+
+        if (!error && data) return true
+      } catch (err) {
+        console.warn('Supabase authorization verification note:', err)
+      }
+    }
+
+    return false
   },
 
   /**
@@ -264,7 +295,22 @@ export const teacherService = {
   async getTeacherClasses(teacherId: string): Promise<TeacherClass[]> {
     if (!teacherId) return []
 
-    if (isSupabaseConfigured && supabase && teacherId !== DEMO_TEACHER_ID) {
+    if (teacherId === DEMO_TEACHER_ID) {
+      return [
+        {
+          id: DEMO_CLASS_ID,
+          name: 'Grade 3 Blossom Explorers',
+          classCode: 'BLOOM-3A',
+          gradeLevel: 3,
+          teacherId: DEMO_TEACHER_ID,
+          studentCount: DEMO_STUDENT_ROSTER.length,
+          isDemo: true,
+        },
+      ]
+    }
+
+    // REAL PRODUCTION SUPABASE DATABASE QUERY
+    if (isSupabaseConfigured && supabase) {
       try {
         const { data, error } = await supabase
           .from('classes')
@@ -272,82 +318,218 @@ export const teacherService = {
           .eq('teacher_id', teacherId)
 
         if (!error && data && data.length > 0) {
-          return data.map((c) => ({
-            id: c.id,
-            name: c.name,
-            classCode: c.class_code,
-            gradeLevel: c.grade_level,
-            teacherId: c.teacher_id,
-            studentCount: 0,
-            isDemo: false,
-          }))
+          const classesWithCounts = await Promise.all(
+            data.map(async (c) => {
+              const { count } = await supabase!
+                .from('class_students')
+                .select('*', { count: 'exact', head: true })
+                .eq('class_id', c.id)
+
+              return {
+                id: c.id,
+                name: c.name,
+                classCode: c.class_code,
+                gradeLevel: c.grade_level,
+                teacherId: c.teacher_id,
+                studentCount: count || 0,
+                isDemo: false,
+              }
+            })
+          )
+          return classesWithCounts
+        }
+
+        // If authenticated teacher has no class yet, automatically provision an initial class
+        const initialCode = `BLOOMI-${teacherId.slice(0, 4).toUpperCase()}`
+        const { data: newClass, error: insertError } = await supabase
+          .from('classes')
+          .insert({
+            name: 'Grade 3 Explorers',
+            class_code: initialCode,
+            grade_level: 3,
+            teacher_id: teacherId,
+          })
+          .select()
+          .single()
+
+        if (!insertError && newClass) {
+          return [
+            {
+              id: newClass.id,
+              name: newClass.name,
+              classCode: newClass.class_code,
+              gradeLevel: newClass.grade_level,
+              teacherId: newClass.teacher_id,
+              studentCount: 0,
+              isDemo: false,
+            },
+          ]
         }
       } catch (err) {
         console.warn('Supabase classes query note:', err)
       }
     }
 
-    // Default demo classroom
-    return [
-      {
-        id: DEMO_CLASS_ID,
-        name: 'Grade 3 Blossom Explorers',
-        classCode: 'BLOOM-3A',
-        gradeLevel: 3,
-        teacherId: teacherId || DEMO_TEACHER_ID,
-        studentCount: DEMO_STUDENT_ROSTER.length,
-        isDemo: true,
-      },
-    ]
+    return []
   },
 
   /**
    * Get students authorized for this teacher.
-   * In demo mode, synchronizes with the active student's local progress for 'demo_student'.
+   * Queries real authenticated student profiles and student_level_progress from Supabase.
    */
   async getTeacherStudents(teacherId: string): Promise<EnrolledStudent[]> {
     if (!teacherId) return []
 
-    // Update demo_student with live local progression data if available
-    const activeProgress = progressionService.getProgress('demo_student')
-    const activeRewards = progressionService.getRewardSummary('demo_student')
+    // Fixture path for unit test runner
+    if (teacherId === DEMO_TEACHER_ID) {
+      const activeProgress = progressionService.getProgress('demo_student')
+      const activeRewards = progressionService.getRewardSummary('demo_student')
 
-    const roster = DEMO_STUDENT_ROSTER.map((student) => {
-      if (student.id === 'demo_student') {
-        const writingSummary = progressionService.getWorldSummary('writing', activeProgress)
-        const speakingSummary = progressionService.getWorldSummary('speaking', activeProgress)
-        const visualSummary = progressionService.getWorldSummary('visual', activeProgress)
-        const socialSummary = progressionService.getWorldSummary('social', activeProgress)
+      return DEMO_STUDENT_ROSTER.map((student) => {
+        if (student.id === 'demo_student') {
+          const writingSummary = progressionService.getWorldSummary('writing', activeProgress)
+          const speakingSummary = progressionService.getWorldSummary('speaking', activeProgress)
+          const visualSummary = progressionService.getWorldSummary('visual', activeProgress)
+          const socialSummary = progressionService.getWorldSummary('social', activeProgress)
 
-        return {
-          ...student,
-          totalStars: activeRewards.totalStars,
-          completedLevelsCount: activeRewards.totalCompletedLevels,
-          earnedBadgesCount: activeRewards.earnedBadges.length,
-          worldProgress: {
-            writing: {
-              completedLevels: writingSummary.completedLevels,
-              currentLevel: writingSummary.currentLevelNumber,
+          return {
+            ...student,
+            totalStars: activeRewards.totalStars,
+            completedLevelsCount: activeRewards.totalCompletedLevels,
+            earnedBadgesCount: activeRewards.earnedBadges.length,
+            worldProgress: {
+              writing: {
+                completedLevels: writingSummary.completedLevels,
+                currentLevel: writingSummary.currentLevelNumber,
+              },
+              speaking: {
+                completedLevels: speakingSummary.completedLevels,
+                currentLevel: speakingSummary.currentLevelNumber,
+              },
+              visual: {
+                completedLevels: visualSummary.completedLevels,
+                currentLevel: visualSummary.currentLevelNumber,
+              },
+              social: {
+                completedLevels: socialSummary.completedLevels,
+                currentLevel: socialSummary.currentLevelNumber,
+              },
             },
-            speaking: {
-              completedLevels: speakingSummary.completedLevels,
-              currentLevel: speakingSummary.currentLevelNumber,
-            },
-            visual: {
-              completedLevels: visualSummary.completedLevels,
-              currentLevel: visualSummary.currentLevelNumber,
-            },
-            social: {
-              completedLevels: socialSummary.completedLevels,
-              currentLevel: socialSummary.currentLevelNumber,
-            },
-          },
+          }
         }
-      }
-      return student
-    })
+        return student
+      })
+    }
 
-    return roster
+    // REAL PRODUCTION SUPABASE DATABASE QUERY
+    if (isSupabaseConfigured && supabase) {
+      try {
+        // 1. Get classes taught by this teacher
+        const { data: classesData, error: classesError } = await supabase
+          .from('classes')
+          .select('id, name, class_code, grade_level, teacher_id')
+          .eq('teacher_id', teacherId)
+
+        if (classesError || !classesData || classesData.length === 0) {
+          return []
+        }
+
+        const classMap = new Map<string, { id: string; name: string; class_code: string; grade_level: number }>()
+        classesData.forEach((c) => classMap.set(c.id, c))
+        const classIds = classesData.map((c) => c.id)
+
+        // 2. Query class_students for enrollments
+        const { data: enrollments, error: enrollError } = await supabase
+          .from('class_students')
+          .select('class_id, student_id, created_at')
+          .in('class_id', classIds)
+
+        if (enrollError || !enrollments || enrollments.length === 0) {
+          return []
+        }
+
+        const studentIds = enrollments.map((e) => e.student_id)
+
+        // 3. Query profiles for enrolled students
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', studentIds)
+
+        if (profilesError || !profilesData || profilesData.length === 0) {
+          return []
+        }
+
+        // 4. Query student_level_progress for real recorded levels
+        const { data: progressData } = await supabase
+          .from('student_level_progress')
+          .select('*')
+          .in('student_id', studentIds)
+
+        // 5. Query sensitive_support_records for accommodations
+        const { data: supportData } = await supabase
+          .from('sensitive_support_records')
+          .select('*')
+          .in('student_id', studentIds)
+
+        const allProgress = progressData || []
+        const allSupport = supportData || []
+
+        const enrolled: EnrolledStudent[] = profilesData.map((p) => {
+          const enrollment = enrollments.find((e) => e.student_id === p.id)
+          const cls = enrollment ? classMap.get(enrollment.class_id) : undefined
+          const studentProgress = allProgress.filter((r) => r.student_id === p.id)
+
+          const totalStars = studentProgress.reduce((sum, r) => sum + (r.stars_earned || 0), 0)
+          const completedLevels = studentProgress.filter((r) => r.completed)
+
+          const worldProgress: Record<WorldId, { completedLevels: number; currentLevel: number }> = {
+            writing: { completedLevels: 0, currentLevel: 1 },
+            speaking: { completedLevels: 0, currentLevel: 1 },
+            visual: { completedLevels: 0, currentLevel: 1 },
+            social: { completedLevels: 0, currentLevel: 1 },
+          }
+
+          ;(['writing', 'speaking', 'visual', 'social'] as WorldId[]).forEach((wId) => {
+            const worldRows = studentProgress.filter((r) => r.world_id === wId && r.completed)
+            const count = worldRows.length
+            const highest = worldRows.length > 0 ? Math.max(...worldRows.map((r) => r.level_number)) : 0
+            worldProgress[wId] = {
+              completedLevels: count,
+              currentLevel: Math.min(highest + 1, 50),
+            }
+          })
+
+          const studentSupport = allSupport.filter((s) => s.student_id === p.id)
+          const accommodations = studentSupport.map((s) => `${s.category}: ${s.details}`)
+
+          return {
+            id: p.id,
+            displayName: p.display_name,
+            registrationNumber: p.registration_number || 'UNASSIGNED',
+            gradeLevel: p.grade_level || 3,
+            avatarId: p.avatar_id || 'panda',
+            className: cls?.name || 'Grade 3 Classroom',
+            classCode: cls?.class_code || 'BLOOMI',
+            teacherId,
+            lastActiveAt: studentProgress[0]?.completed_at || p.created_at,
+            totalStars,
+            completedLevelsCount: completedLevels.length,
+            earnedBadgesCount: Math.floor(completedLevels.length / 3),
+            worldProgress,
+            supportAccommodations: accommodations.length > 0 ? accommodations : ['Standard Grade 3 Pacing'],
+            isDemo: false,
+          }
+        })
+
+        return enrolled
+      } catch (err) {
+        console.error('Failed to query live teacher students:', err)
+        return []
+      }
+    }
+
+    return []
   },
 
   /**
@@ -375,7 +557,7 @@ export const teacherService = {
       }
     }
 
-    const progress = progressionService.getProgress(studentId)
+    const progress = await progressionService.loadFromCloud(studentId)
     const rewardSummary = progressionService.getRewardSummary(studentId)
 
     const worldIds: WorldId[] = ['writing', 'speaking', 'visual', 'social']

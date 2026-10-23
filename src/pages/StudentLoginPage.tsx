@@ -27,7 +27,6 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
   const {
     loginStudent,
     signUpStudent,
-    loginDemoStudent,
     isConfigured,
     isLoading: authLoading,
     session,
@@ -167,34 +166,28 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
     }
   }
 
-  const handleLaunchOfflineDemo = () => {
-    loginDemoStudent()
-    const targetDestination = (location.state as any)?.from?.pathname || '/student/hub'
-    navigate(targetDestination, { replace: true })
-  }
-
   return (
     <div className="max-w-2xl mx-auto py-4 sm:py-8 space-y-6">
       <Link
         to="/"
-        className="min-h-[44px] inline-flex items-center gap-2 text-sm font-bold text-[#24483D] hover:text-[#16563F] transition-colors focus:outline-none focus:ring-2 focus:ring-[#24483D] rounded-xl px-2 py-1"
+        className="min-h-[44px] inline-flex items-center gap-2 text-sm font-bold text-[#d8b4fe] hover:text-[#ff2a85] transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff2a85] rounded-xl px-2 py-1"
       >
         <ArrowLeft className="w-4 h-4" aria-hidden="true" />
         <span>Back to Learning Worlds</span>
       </Link>
 
-      <div className="rounded-3xl p-6 sm:p-10 border-2 transition-all bg-white border-[rgba(36,72,61,0.12)] shadow-xs">
+      <div className="rounded-3xl p-6 sm:p-10 border-2 transition-all bg-[#0e0520] border-[#ff2a85]/40 shadow-[0_0_40px_rgba(255,42,133,0.2)] text-[#fdf4ff]">
         {/* Header Mascot */}
         <div className="text-center space-y-2 mb-6">
-          <div className="w-16 h-16 mx-auto rounded-3xl bg-[#FFF5EE] border border-[#F8D2B8] flex items-center justify-center shadow-xs">
+          <div className="w-16 h-16 mx-auto rounded-3xl bg-[#160a33] border-2 border-[#ff2a85]/50 flex items-center justify-center shadow-[0_0_20px_rgba(255,42,133,0.4)]">
             <BloomiMascot size={42} reducedMotion />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold font-fredoka text-[#24483D]">
+          <h1 className="text-2xl sm:text-3xl font-extrabold font-fredoka neon-text-pink">
             {mode === 'signin' ? 'Student Adventure Sign-In' : 'Join the Adventure as a Student'}
           </h1>
-          <p className="text-sm text-[#3D6355] font-medium max-w-md mx-auto">
+          <p className="text-sm text-[#d8b4fe] font-medium max-w-md mx-auto">
             {mode === 'signin'
-              ? 'Enter your school-issued registration number and secret password to begin!'
+              ? 'Enter your school-issued registration number and secret password to enter your world!'
               : 'Create your Grade 3 student profile using your school-assigned registration code.'}
           </p>
         </div>
@@ -203,7 +196,7 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
         <div
           role="tablist"
           aria-label="Student Account Access"
-          className="grid grid-cols-2 p-1.5 rounded-2xl bg-[#FFFDF7] border-2 border-[rgba(36,72,61,0.15)] mb-6 gap-1"
+          className="grid grid-cols-2 p-1.5 rounded-2xl bg-[#160a33] border-2 border-[#a855f7]/30 mb-6 gap-1"
         >
           <button
             type="button"
@@ -213,10 +206,10 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
               setMode('signin')
               setLocalError(null)
             }}
-            className={`min-h-[44px] py-2.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-[#24483D] ${
+            className={`min-h-[44px] py-2.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-[#ff2a85] ${
               mode === 'signin'
-                ? 'bg-[#24483D] text-[#FFFDF7] shadow-xs'
-                : 'text-[#3D6355] hover:text-[#24483D]'
+                ? 'bg-[#ff2a85] text-white shadow-[0_0_15px_rgba(255,42,133,0.8)]'
+                : 'text-[#d8b4fe] hover:text-white'
             }`}
           >
             <Sparkles className="w-4 h-4" aria-hidden="true" />
@@ -231,10 +224,10 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
               setMode('signup')
               setLocalError(null)
             }}
-            className={`min-h-[44px] py-2.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-[#24483D] ${
+            className={`min-h-[44px] py-2.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-[#ff2a85] ${
               mode === 'signup'
-                ? 'bg-[#24483D] text-[#FFFDF7] shadow-xs'
-                : 'text-[#3D6355] hover:text-[#24483D]'
+                ? 'bg-[#a855f7] text-white shadow-[0_0_15px_rgba(168,85,247,0.8)]'
+                : 'text-[#d8b4fe] hover:text-white'
             }`}
           >
             <Smile className="w-4 h-4" aria-hidden="true" />
@@ -246,20 +239,20 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
         {session && (
           <div
             role="status"
-            className="mb-6 p-4 rounded-2xl bg-[#F0FAF5] border-2 border-[#B2E6CE] text-[#16563F] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+            className="mb-6 p-4 rounded-2xl bg-[#160a33] border-2 border-[#00f5ff]/40 text-[#fdf4ff] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-[0_0_15px_rgba(0,245,255,0.2)]"
           >
             <div className="flex items-center gap-2.5">
-              <Smile className="w-5 h-5 shrink-0 text-[#16563F]" aria-hidden="true" />
+              <Smile className="w-5 h-5 shrink-0 text-[#00f5ff]" aria-hidden="true" />
               <div className="text-xs sm:text-sm">
-                <span className="font-bold">Active Explorer Session:</span> You are currently signed in as{' '}
-                <span className="font-bold underline">{profile?.display_name || 'an explorer'}</span>
+                <span className="font-bold text-[#00f5ff]">Active Session:</span> Signed in as{' '}
+                <span className="font-bold underline text-white">{profile?.display_name || 'an explorer'}</span>
                 {profile?.registration_number ? ` (${profile.registration_number})` : ''}.
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <Link
                 to={profile?.role === 'teacher' ? '/teacher/dashboard' : '/student/hub'}
-                className="px-3.5 py-1.5 rounded-xl bg-[#24483D] text-[#FFFDF7] text-xs font-bold hover:bg-[#152E26] shadow-xs transition-colors"
+                className="px-3.5 py-1.5 rounded-xl bg-[#ff2a85] text-white text-xs font-bold hover:bg-[#ff007f] shadow-[0_0_10px_rgba(255,42,133,0.6)] transition-all"
               >
                 Go to {profile?.role === 'teacher' ? 'Dashboard' : 'Hub'}
               </Link>
@@ -269,7 +262,7 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
                   await logout()
                   setLocalError(null)
                 }}
-                className="px-3.5 py-1.5 rounded-xl border border-[#16563F] text-[#16563F] hover:bg-[#CDEFE0] text-xs font-bold transition-colors"
+                className="px-3.5 py-1.5 rounded-xl border border-[#a855f7]/50 text-[#d8b4fe] hover:text-white hover:bg-[#a855f7]/20 text-xs font-bold transition-colors"
               >
                 Sign Out First
               </button>
@@ -279,10 +272,10 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
 
         {/* Configuration Notice if Supabase is unconfigured */}
         {!isConfigured && (
-          <div className="mb-6 p-4 rounded-2xl bg-[#FFFBE6] border border-[#FCE58D] flex items-start gap-3 text-xs text-[#664B00]">
-            <Info className="w-5 h-5 text-[#8A6400] shrink-0 mt-0.5" aria-hidden="true" />
+          <div className="mb-6 p-4 rounded-2xl bg-amber-950/40 border border-amber-600/60 flex items-start gap-3 text-xs text-amber-200">
+            <Info className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
             <div>
-              <span className="font-bold">Backend Configuration Notice:</span> Supabase environment variables are currently set to placeholders. To authenticate or register live student accounts, add your project credentials to <code>.env.local</code> and deploy the student Edge Functions.
+              <span className="font-bold">Backend Configuration Notice:</span> Supabase environment variables are missing. Live student authentication requires <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in <code>.env.local</code>.
             </div>
           </div>
         )}
@@ -292,9 +285,9 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
           <div
             role="alert"
             aria-live="assertive"
-            className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm flex items-start gap-3"
+            className="mb-6 p-4 rounded-2xl bg-rose-950/50 border border-rose-500/60 text-rose-200 text-xs sm:text-sm flex items-start gap-3 shadow-[0_0_15px_rgba(244,63,94,0.3)]"
           >
-            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" aria-hidden="true" />
+            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" aria-hidden="true" />
             <div className="space-y-1.5 flex-1">
               <div className="font-semibold">{localError}</div>
               {mode === 'signup' &&
@@ -306,7 +299,7 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
                         setMode('signin')
                         setLocalError(null)
                       }}
-                      className="inline-flex items-center gap-1 font-extrabold text-rose-900 underline hover:text-rose-950 text-xs"
+                      className="inline-flex items-center gap-1 font-extrabold text-[#00f5ff] underline hover:text-white text-xs"
                     >
                       <span>Switch to Sign In tab with this code</span>
                       <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
@@ -322,7 +315,7 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
           <form onSubmit={handleSignInSubmit} className="space-y-6">
             {/* Companion Avatar Selection (Optional Profile Preference) */}
             <div>
-              <label className="block text-xs font-extrabold uppercase tracking-wider text-[#3D6355] mb-3">
+              <label className="block text-xs font-extrabold uppercase tracking-wider text-[#d8b4fe] mb-3">
                 1. Choose Your Companion Avatar
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -331,16 +324,16 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
                     key={av.id}
                     type="button"
                     onClick={() => setSelectedAvatar(av.id)}
-                    className={`min-h-[72px] p-2.5 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all focus:outline-none focus:ring-4 focus:ring-[#24483D] ${
+                    className={`min-h-[72px] p-2.5 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all focus:outline-none focus:ring-4 focus:ring-[#ff2a85] ${
                       selectedAvatar === av.id
-                        ? 'border-[#24483D] bg-[#CDEFE0] scale-105 shadow-sm'
-                        : 'border-[rgba(36,72,61,0.15)] hover:border-[#24483D] bg-[#FFFDF7]'
+                        ? 'border-[#ff2a85] bg-[#ff2a85]/20 scale-105 shadow-[0_0_18px_rgba(255,42,133,0.5)]'
+                        : 'border-[#a855f7]/30 hover:border-[#ff2a85]/60 bg-[#160a33]'
                     }`}
                     aria-pressed={selectedAvatar === av.id}
                   >
                     <CompanionAvatar id={av.avatarKey} size="md" />
-                    <span className="text-xs font-black text-[#24483D] text-center leading-tight">{av.name}</span>
-                    <span className="text-[10px] font-bold text-[#3D6355]/80">{av.realm}</span>
+                    <span className="text-xs font-black text-white text-center leading-tight">{av.name}</span>
+                    <span className="text-[10px] font-bold text-[#d8b4fe]">{av.realm}</span>
                   </button>
                 ))}
               </div>
@@ -350,7 +343,7 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
             <div>
               <label
                 htmlFor="signin-registration-number"
-                className="block text-xs font-extrabold uppercase tracking-wider text-[#3D6355] mb-2"
+                className="block text-xs font-extrabold uppercase tracking-wider text-[#d8b4fe] mb-2"
               >
                 2. School Registration Number
               </label>
@@ -363,12 +356,12 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
                   placeholder="e.g. BLOOMI-3A-01"
                   disabled={isSubmitting}
                   autoComplete="username"
-                  className="w-full min-h-[48px] px-4 py-3 pl-10 rounded-xl border border-[rgba(36,72,61,0.25)] text-[#24483D] uppercase placeholder-[#3D6355]/40 font-bold focus:outline-none focus:ring-3 focus:ring-[#24483D] tracking-wide bg-[#FFFDF7]"
+                  className="w-full min-h-[48px] px-4 py-3 pl-10 rounded-xl border border-[#a855f7]/40 text-white uppercase placeholder-[#9382ad] font-bold focus:outline-none focus:ring-3 focus:ring-[#ff2a85] focus:border-[#ff2a85] tracking-wide bg-[#160a33]"
                   required
                 />
-                <User className="absolute left-3.5 top-3.5 w-4 h-4 text-[#3D6355]" aria-hidden="true" />
+                <User className="absolute left-3.5 top-3.5 w-4 h-4 text-[#00f5ff]" aria-hidden="true" />
               </div>
-              <p className="text-[11px] text-[#3D6355] font-medium mt-1">
+              <p className="text-[11px] text-[#d8b4fe] font-medium mt-1">
                 Your school-issued code found on your student adventure badge.
               </p>
             </div>
@@ -377,7 +370,7 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
             <div>
               <label
                 htmlFor="signin-password"
-                className="block text-xs font-extrabold uppercase tracking-wider text-[#3D6355] mb-2"
+                className="block text-xs font-extrabold uppercase tracking-wider text-[#d8b4fe] mb-2"
               >
                 3. Secret Adventure Password
               </label>
@@ -390,15 +383,15 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
                   placeholder="••••••••"
                   disabled={isSubmitting}
                   autoComplete="current-password"
-                  className="w-full min-h-[48px] px-4 py-3 pl-10 pr-12 rounded-xl border border-[rgba(36,72,61,0.25)] text-[#24483D] placeholder-[#3D6355]/40 font-medium focus:outline-none focus:ring-3 focus:ring-[#24483D] bg-[#FFFDF7]"
+                  className="w-full min-h-[48px] px-4 py-3 pl-10 pr-12 rounded-xl border border-[#a855f7]/40 text-white placeholder-[#9382ad] font-medium focus:outline-none focus:ring-3 focus:ring-[#ff2a85] focus:border-[#ff2a85] bg-[#160a33]"
                   required
                 />
-                <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-[#3D6355]" aria-hidden="true" />
+                <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-[#00f5ff]" aria-hidden="true" />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="min-h-[44px] min-w-[44px] absolute right-1.5 top-0.5 flex items-center justify-center rounded-lg text-[#3D6355] hover:text-[#24483D] hover:bg-[rgba(36,72,61,0.06)] focus:outline-none focus:ring-2 focus:ring-[#24483D]"
+                  className="min-h-[44px] min-w-[44px] absolute right-1.5 top-0.5 flex items-center justify-center rounded-lg text-[#d8b4fe] hover:text-white hover:bg-[#ff2a85]/20 focus:outline-none focus:ring-2 focus:ring-[#ff2a85]"
                 >
                   {showPassword ? (
                     <EyeOff className="w-4 h-4" aria-hidden="true" />
@@ -413,7 +406,7 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
             <button
               type="submit"
               disabled={isSubmitting || authLoading}
-              className="w-full min-h-[52px] py-4 rounded-2xl font-extrabold text-base sm:text-lg bg-[#FFE0CC] hover:bg-[#FFCFB0] text-[#7A3300] border-2 border-[#F8D2B8] shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-[#7A3300]"
+              className="w-full min-h-[52px] py-4 rounded-2xl font-extrabold text-base sm:text-lg btn-neon-pink flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-[#ff2a85]"
             >
               {isSubmitting ? (
                 <>
@@ -422,7 +415,7 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-5 h-5" aria-hidden="true" />
+                  <Sparkles className="w-5 h-5 text-[#ffd700]" aria-hidden="true" />
                   <span>Enter Adventure</span>
                 </>
               )}
@@ -435,7 +428,7 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
           <form onSubmit={handleSignUpSubmit} className="space-y-6">
             {/* Avatar Selector */}
             <div>
-              <label className="block text-xs font-extrabold uppercase tracking-wider text-[#3D6355] mb-3">
+              <label className="block text-xs font-extrabold uppercase tracking-wider text-[#d8b4fe] mb-3">
                 1. Pick Your Adventure Companion
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -444,16 +437,16 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
                     key={av.id}
                     type="button"
                     onClick={() => setSelectedAvatar(av.id)}
-                    className={`min-h-[72px] p-2.5 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all focus:outline-none focus:ring-4 focus:ring-[#24483D] ${
+                    className={`min-h-[72px] p-2.5 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all focus:outline-none focus:ring-4 focus:ring-[#ff2a85] ${
                       selectedAvatar === av.id
-                        ? 'border-[#24483D] bg-[#CDEFE0] scale-105 shadow-sm'
-                        : 'border-[rgba(36,72,61,0.15)] hover:border-[#24483D] bg-[#FFFDF7]'
+                        ? 'border-[#ff2a85] bg-[#ff2a85]/20 scale-105 shadow-[0_0_18px_rgba(255,42,133,0.5)]'
+                        : 'border-[#a855f7]/30 hover:border-[#ff2a85]/60 bg-[#160a33]'
                     }`}
                     aria-pressed={selectedAvatar === av.id}
                   >
                     <CompanionAvatar id={av.avatarKey} size="md" />
-                    <span className="text-xs font-black text-[#24483D] text-center leading-tight">{av.name}</span>
-                    <span className="text-[10px] font-bold text-[#3D6355]/80">{av.realm}</span>
+                    <span className="text-xs font-black text-white text-center leading-tight">{av.name}</span>
+                    <span className="text-[10px] font-bold text-[#d8b4fe]">{av.realm}</span>
                   </button>
                 ))}
               </div>
@@ -463,7 +456,7 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
             <div>
               <label
                 htmlFor="signup-display-name"
-                className="block text-xs font-extrabold uppercase tracking-wider text-[#3D6355] mb-2"
+                className="block text-xs font-extrabold uppercase tracking-wider text-[#d8b4fe] mb-2"
               >
                 2. Your Explorer Name (or Nickname)
               </label>
@@ -476,12 +469,12 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
                   placeholder="e.g. Leo M."
                   disabled={isSubmitting}
                   autoComplete="nickname"
-                  className="w-full min-h-[48px] px-4 py-3 pl-10 rounded-xl border border-[rgba(36,72,61,0.25)] text-[#24483D] placeholder-[#3D6355]/40 font-bold focus:outline-none focus:ring-3 focus:ring-[#24483D] bg-[#FFFDF7]"
+                  className="w-full min-h-[48px] px-4 py-3 pl-10 rounded-xl border border-[#a855f7]/40 text-white placeholder-[#9382ad] font-bold focus:outline-none focus:ring-3 focus:ring-[#ff2a85] focus:border-[#ff2a85] bg-[#160a33]"
                   required
                 />
-                <Smile className="absolute left-3.5 top-3.5 w-4 h-4 text-[#3D6355]" aria-hidden="true" />
+                <Smile className="absolute left-3.5 top-3.5 w-4 h-4 text-[#ffd700]" aria-hidden="true" />
               </div>
-              <p className="text-[11px] text-[#3D6355] font-medium mt-1">
+              <p className="text-[11px] text-[#d8b4fe] font-medium mt-1">
                 This is the name your friends and mascot will call you in BLOOMI.
               </p>
             </div>
@@ -491,11 +484,11 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
               <div className="flex items-center justify-between mb-2">
                 <label
                   htmlFor="signup-registration-number"
-                  className="block text-xs font-extrabold uppercase tracking-wider text-[#3D6355]"
+                  className="block text-xs font-extrabold uppercase tracking-wider text-[#d8b4fe]"
                 >
                   3. School-Issued Registration Code
                 </label>
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#16563F] bg-[#CDEFE0] px-2 py-0.5 rounded-md">
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#00f5ff] bg-[#00f5ff]/20 px-2 py-0.5 rounded-md border border-[#00f5ff]/40">
                   <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>Grade 3 School Code</span>
                 </span>
@@ -509,12 +502,12 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
                   placeholder="e.g. BLOOMI-3A-01"
                   disabled={isSubmitting}
                   autoComplete="off"
-                  className="w-full min-h-[48px] px-4 py-3 pl-10 rounded-xl border border-[rgba(36,72,61,0.25)] text-[#24483D] uppercase placeholder-[#3D6355]/40 font-bold focus:outline-none focus:ring-3 focus:ring-[#24483D] tracking-wide bg-[#FFFDF7]"
+                  className="w-full min-h-[48px] px-4 py-3 pl-10 rounded-xl border border-[#a855f7]/40 text-white uppercase placeholder-[#9382ad] font-bold focus:outline-none focus:ring-3 focus:ring-[#ff2a85] focus:border-[#ff2a85] tracking-wide bg-[#160a33]"
                   required
                 />
-                <User className="absolute left-3.5 top-3.5 w-4 h-4 text-[#3D6355]" aria-hidden="true" />
+                <User className="absolute left-3.5 top-3.5 w-4 h-4 text-[#00f5ff]" aria-hidden="true" />
               </div>
-              <p className="text-[11px] text-[#3D6355] font-medium mt-1">
+              <p className="text-[11px] text-[#d8b4fe] font-medium mt-1">
                 Your school or classroom code protects child privacy and connects you to your grade.
               </p>
             </div>
@@ -523,7 +516,7 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
             <div>
               <label
                 htmlFor="signup-password"
-                className="block text-xs font-extrabold uppercase tracking-wider text-[#3D6355] mb-2"
+                className="block text-xs font-extrabold uppercase tracking-wider text-[#d8b4fe] mb-2"
               >
                 4. Create a Secret Adventure Password
               </label>
@@ -536,15 +529,15 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
                   placeholder="At least 6 characters"
                   disabled={isSubmitting}
                   autoComplete="new-password"
-                  className="w-full min-h-[48px] px-4 py-3 pl-10 pr-12 rounded-xl border border-[rgba(36,72,61,0.25)] text-[#24483D] placeholder-[#3D6355]/40 font-medium focus:outline-none focus:ring-3 focus:ring-[#24483D] bg-[#FFFDF7]"
+                  className="w-full min-h-[48px] px-4 py-3 pl-10 pr-12 rounded-xl border border-[#a855f7]/40 text-white placeholder-[#9382ad] font-medium focus:outline-none focus:ring-3 focus:ring-[#ff2a85] focus:border-[#ff2a85] bg-[#160a33]"
                   required
                 />
-                <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-[#3D6355]" aria-hidden="true" />
+                <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-[#00f5ff]" aria-hidden="true" />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="min-h-[44px] min-w-[44px] absolute right-1.5 top-0.5 flex items-center justify-center rounded-lg text-[#3D6355] hover:text-[#24483D] hover:bg-[rgba(36,72,61,0.06)] focus:outline-none focus:ring-2 focus:ring-[#24483D]"
+                  className="min-h-[44px] min-w-[44px] absolute right-1.5 top-0.5 flex items-center justify-center rounded-lg text-[#d8b4fe] hover:text-white hover:bg-[#ff2a85]/20 focus:outline-none focus:ring-2 focus:ring-[#ff2a85]"
                 >
                   {showPassword ? (
                     <EyeOff className="w-4 h-4" aria-hidden="true" />
@@ -559,7 +552,7 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
             <div>
               <label
                 htmlFor="signup-confirm-password"
-                className="block text-xs font-extrabold uppercase tracking-wider text-[#3D6355] mb-2"
+                className="block text-xs font-extrabold uppercase tracking-wider text-[#d8b4fe] mb-2"
               >
                 5. Confirm Secret Adventure Password
               </label>
@@ -572,15 +565,15 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
                   placeholder="Re-type password"
                   disabled={isSubmitting}
                   autoComplete="new-password"
-                  className="w-full min-h-[48px] px-4 py-3 pl-10 pr-12 rounded-xl border border-[rgba(36,72,61,0.25)] text-[#24483D] placeholder-[#3D6355]/40 font-medium focus:outline-none focus:ring-3 focus:ring-[#24483D] bg-[#FFFDF7]"
+                  className="w-full min-h-[48px] px-4 py-3 pl-10 pr-12 rounded-xl border border-[#a855f7]/40 text-white placeholder-[#9382ad] font-medium focus:outline-none focus:ring-3 focus:ring-[#ff2a85] focus:border-[#ff2a85] bg-[#160a33]"
                   required
                 />
-                <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-[#3D6355]" aria-hidden="true" />
+                <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-[#00f5ff]" aria-hidden="true" />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                  className="min-h-[44px] min-w-[44px] absolute right-1.5 top-0.5 flex items-center justify-center rounded-lg text-[#3D6355] hover:text-[#24483D] hover:bg-[rgba(36,72,61,0.06)] focus:outline-none focus:ring-2 focus:ring-[#24483D]"
+                  className="min-h-[44px] min-w-[44px] absolute right-1.5 top-0.5 flex items-center justify-center rounded-lg text-[#d8b4fe] hover:text-white hover:bg-[#ff2a85]/20 focus:outline-none focus:ring-2 focus:ring-[#ff2a85]"
                 >
                   {showConfirmPassword ? (
                     <EyeOff className="w-4 h-4" aria-hidden="true" />
@@ -595,7 +588,7 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
             <button
               type="submit"
               disabled={isSubmitting || authLoading}
-              className="w-full min-h-[52px] py-4 rounded-2xl font-extrabold text-base sm:text-lg bg-[#CDEFE0] hover:bg-[#B2E6CE] text-[#16563F] border-2 border-[#B2E6CE] shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-[#16563F]"
+              className="w-full min-h-[52px] py-4 rounded-2xl font-extrabold text-base sm:text-lg btn-neon-purple flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-[#a855f7]"
             >
               {isSubmitting ? (
                 <>
@@ -604,7 +597,7 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-5 h-5" aria-hidden="true" />
+                  <Sparkles className="w-5 h-5 text-[#ffd700]" aria-hidden="true" />
                   <span>Create Adventure Pass &amp; Start Exploring</span>
                 </>
               )}
@@ -613,38 +606,15 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
         )}
 
         {/* Teacher Link Notice */}
-        <div className="mt-6 pt-4 border-t border-[rgba(36,72,61,0.08)] flex items-center justify-between flex-wrap gap-2 text-xs text-[#3D6355]">
+        <div className="mt-8 pt-4 border-t border-[#ff2a85]/20 flex items-center justify-between flex-wrap gap-2 text-xs text-[#d8b4fe]">
           <span>Are you a classroom teacher or specialist?</span>
           <Link
             to="/login/teacher"
-            className="inline-flex items-center gap-1 font-bold text-[#4A248A] hover:underline"
+            className="inline-flex items-center gap-1 font-bold text-[#00f5ff] hover:text-white hover:underline"
           >
             <GraduationCap className="w-3.5 h-3.5" aria-hidden="true" />
             <span>Teacher Portal Sign In</span>
           </Link>
-        </div>
-
-        {/* Explicitly Labelled Offline Development / Evaluation Flow */}
-        <div className="mt-8 pt-6 border-t border-[rgba(36,72,61,0.12)] space-y-3">
-          <div className="p-4 rounded-2xl bg-[#FFFDF7] border-2 border-dashed border-[#FCE58D] text-xs space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded-md bg-[#FFF0B3] font-black uppercase text-[10px] tracking-wider text-[#664B00] border border-[#FCE58D]">
-                Offline Preview
-              </span>
-              <span className="font-extrabold text-[#664B00]">Developer / Evaluation Flow Only</span>
-            </div>
-            <p className="text-[11px] leading-relaxed text-[#3D6355]">
-              To evaluate the Grade 3 Student Hub offline without active Supabase credentials, you can enter using this mock demo session. This runs entirely in-memory and does not connect to or authenticate against a remote database.
-            </p>
-            <button
-              type="button"
-              onClick={handleLaunchOfflineDemo}
-              className="min-h-[44px] w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-[#F8D2B8] bg-[#FFE0CC] hover:bg-[#FFCFB0] text-[#7A3300] text-xs font-black transition-colors focus:outline-none focus:ring-3 focus:ring-[#7A3300]"
-            >
-              <Sparkles className="w-4 h-4 text-[#7A3300]" aria-hidden="true" />
-              <span>Launch Offline Demo Student Session (Leo M. · BLOOMI-3A-01)</span>
-            </button>
-          </div>
         </div>
       </div>
     </div>

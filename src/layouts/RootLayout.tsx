@@ -57,16 +57,24 @@ export const RootLayout: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen flex flex-col transition-colors selection:bg-[#E8DEFF] selection:text-[#24483D] ${
+      className={`min-h-screen flex flex-col transition-colors selection:bg-[#ff2a85] selection:text-white ${
         highContrast
-          ? 'high-contrast bg-[#0C1210] text-[#FFFDF7]'
-          : 'bg-[#FFFDF7] text-[#24483D]'
+          ? 'high-contrast bg-[#000000] text-[#ffffff]'
+          : 'bg-[#06020e] text-[#fdf4ff]'
       } ${reducedMotion ? 'reduced-motion' : ''} ${largeFont ? 'text-lg leading-relaxed' : 'text-base'}`}
+      style={{
+        backgroundImage: `
+          radial-gradient(circle at 15% 15%, rgba(255, 42, 133, 0.08) 0%, transparent 40%),
+          radial-gradient(circle at 85% 20%, rgba(168, 85, 247, 0.1) 0%, transparent 45%),
+          radial-gradient(circle at 50% 80%, rgba(0, 245, 255, 0.05) 0%, transparent 50%)
+        `,
+        backgroundAttachment: 'fixed',
+      }}
     >
       {/* Skip to Main Content Link for screen reader & keyboard accessibility */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 z-[100] px-4 py-2.5 rounded-xl bg-[#24483D] text-[#FFFDF7] font-semibold text-sm shadow-lg focus:outline-none focus:ring-4 focus:ring-[#CDEFE0]"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 z-[100] px-4 py-2.5 rounded-xl bg-[#ff2a85] text-white font-bold text-sm shadow-[0_0_20px_rgba(255,42,133,0.8)] focus:outline-none focus:ring-4 focus:ring-[#00f5ff]"
       >
         Skip to main content
       </a>

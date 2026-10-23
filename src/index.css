@@ -4,39 +4,41 @@
   --font-fredoka: "Fredoka", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-lexend: "Lexend", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
-  /* BLOOMI Brand Color Tokens */
-  --color-cream: #FFFDF7;
-  --color-forest: #24483D;
-  --color-forest-muted: #3D6355;
-  --color-forest-dark: #152E26;
-  --color-mint: #CDEFE0;
-  --color-mint-light: #F0FAF5;
-  --color-mint-dark: #16563F;
-  --color-lavender: #E8DEFF;
-  --color-lavender-light: #F7F4FF;
-  --color-lavender-dark: #4A248A;
-  --color-peach: #FFE0CC;
-  --color-peach-light: #FFF5EE;
-  --color-peach-dark: #7A3300;
-  --color-soft-yellow: #FFF0B3;
-  --color-soft-yellow-light: #FFFBE6;
-  --color-soft-yellow-dark: #664B00;
+  /* BLOOMI Neon Magical Adventure Theme Tokens */
+  --color-neon-pink: #ff2a85;
+  --color-neon-pink-bright: #ff007f;
+  --color-neon-pink-glow: rgba(255, 42, 133, 0.6);
+  --color-neon-purple: #a855f7;
+  --color-neon-purple-electric: #9333ea;
+  --color-neon-purple-dark: #581c87;
+  --color-neon-purple-glow: rgba(168, 85, 247, 0.6);
+  --color-neon-cyan: #00f5ff;
+  --color-neon-cyan-glow: rgba(0, 245, 255, 0.6);
+  --color-neon-gold: #ffd700;
+  --color-neon-gold-glow: rgba(255, 215, 0, 0.6);
+
+  --color-dark-bg: #06020e;
+  --color-dark-surface: #0e0520;
+  --color-dark-surface-elevated: #160a33;
+  --color-dark-border: rgba(255, 42, 133, 0.25);
 }
 
 :root {
-  --bg-main: #FFFDF7;
-  --text-main: #24483D;
-  --text-muted: #3D6355;
-  --card-bg: #FFFFFF;
-  --card-border: rgba(36, 72, 61, 0.12);
-  --shadow-warm: 0 4px 20px -2px rgba(36, 72, 61, 0.06), 0 2px 6px -1px rgba(36, 72, 61, 0.03);
-  --shadow-warm-hover: 0 12px 28px -4px rgba(36, 72, 61, 0.12), 0 4px 10px -2px rgba(36, 72, 61, 0.06);
-  --focus-ring: #24483D;
+  --bg-main: #06020e;
+  --bg-surface: #0e0520;
+  --bg-surface-elevated: #160a33;
+  --text-main: #fdf4ff;
+  --text-muted: #d8b4fe;
+  --text-dim: #9382ad;
+  --card-bg: #0e0520;
+  --card-border: rgba(255, 42, 133, 0.25);
+  --card-border-purple: rgba(168, 85, 247, 0.3);
+  --focus-ring: #ff2a85;
   font-family: var(--font-lexend);
   line-height: 1.6;
   color: var(--text-main);
   background-color: var(--bg-main);
-  color-scheme: light;
+  color-scheme: dark;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -44,6 +46,8 @@
 /* iPad Safari Viewport & Safe Area Spacing */
 html, body {
   min-height: 100%;
+  background-color: #06020e;
+  color: #fdf4ff;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left: env(safe-area-inset-left, 0px);
@@ -61,31 +65,147 @@ select,
   min-height: 44px;
 }
 
-/* 3D Cartoon Layered Aesthetic Classes */
+/* Cyber-Magical Neon Glow Utilities */
+.neon-box-pink {
+  background: radial-gradient(circle at top left, rgba(255, 42, 133, 0.12), transparent 70%), #0e0520;
+  border: 1px solid rgba(255, 42, 133, 0.45);
+  box-shadow: 0 0 20px rgba(255, 42, 133, 0.2), inset 0 0 15px rgba(255, 42, 133, 0.08);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.neon-box-pink:hover {
+  border-color: #ff2a85;
+  box-shadow: 0 0 30px rgba(255, 42, 133, 0.45), inset 0 0 20px rgba(255, 42, 133, 0.15);
+  transform: translateY(-2px);
+}
+
+.neon-box-purple {
+  background: radial-gradient(circle at top left, rgba(168, 85, 247, 0.15), transparent 70%), #0e0520;
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.2), inset 0 0 15px rgba(168, 85, 247, 0.08);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.neon-box-purple:hover {
+  border-color: #c084fc;
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.45), inset 0 0 20px rgba(168, 85, 247, 0.15);
+  transform: translateY(-2px);
+}
+
+.neon-box-cyan {
+  background: radial-gradient(circle at top left, rgba(0, 245, 255, 0.12), transparent 70%), #0e0520;
+  border: 1px solid rgba(0, 245, 255, 0.4);
+  box-shadow: 0 0 20px rgba(0, 245, 255, 0.2), inset 0 0 15px rgba(0, 245, 255, 0.08);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.neon-box-cyan:hover {
+  border-color: #00f5ff;
+  box-shadow: 0 0 30px rgba(0, 245, 255, 0.45), inset 0 0 20px rgba(0, 245, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.neon-box-gold {
+  background: radial-gradient(circle at top left, rgba(255, 215, 0, 0.12), transparent 70%), #0e0520;
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.2), inset 0 0 15px rgba(255, 215, 0, 0.08);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.neon-box-gold:hover {
+  border-color: #ffd700;
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.45), inset 0 0 20px rgba(255, 215, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Neon Text Glows */
+.neon-text-pink {
+  color: #ff2a85;
+  text-shadow: 0 0 10px rgba(255, 42, 133, 0.7), 0 0 25px rgba(255, 42, 133, 0.4);
+}
+
+.neon-text-purple {
+  color: #c084fc;
+  text-shadow: 0 0 10px rgba(168, 85, 247, 0.7), 0 0 25px rgba(168, 85, 247, 0.4);
+}
+
+.neon-text-cyan {
+  color: #00f5ff;
+  text-shadow: 0 0 10px rgba(0, 245, 255, 0.7), 0 0 25px rgba(0, 245, 255, 0.4);
+}
+
+.neon-text-gold {
+  color: #ffd700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.7), 0 0 25px rgba(255, 215, 0, 0.4);
+}
+
+/* Interactive Neon Buttons */
+.btn-neon-pink {
+  background: linear-gradient(135deg, #ff2a85 0%, #d91b68 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 20px rgba(255, 42, 133, 0.5), 0 4px 12px rgba(0, 0, 0, 0.5);
+  transition: all 0.15s ease;
+}
+
+.btn-neon-pink:hover {
+  background: linear-gradient(135deg, #ff4d9c 0%, #ff2a85 100%);
+  box-shadow: 0 0 30px rgba(255, 42, 133, 0.8), 0 6px 16px rgba(0, 0, 0, 0.6);
+  transform: translateY(-2px);
+}
+
+.btn-neon-pink:active {
+  transform: translateY(1px);
+  box-shadow: 0 0 15px rgba(255, 42, 133, 0.4);
+}
+
+.btn-neon-purple {
+  background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.5), 0 4px 12px rgba(0, 0, 0, 0.5);
+  transition: all 0.15s ease;
+}
+
+.btn-neon-purple:hover {
+  background: linear-gradient(135deg, #c084fc 0%, #9333ea 100%);
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.8), 0 6px 16px rgba(0, 0, 0, 0.6);
+  transform: translateY(-2px);
+}
+
+.btn-neon-purple:active {
+  transform: translateY(1px);
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
+}
+
+/* 3D Cartoon Layered Aesthetic Classes with Neon */
 .cartoon-card {
   border-radius: 1.5rem;
-  box-shadow: 0 8px 0 rgba(36, 72, 61, 0.08), 0 16px 24px -6px rgba(36, 72, 61, 0.06);
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  background-color: #0e0520;
+  border: 1px solid rgba(255, 42, 133, 0.25);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.8), 0 0 20px rgba(168, 85, 247, 0.15);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .cartoon-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 0 rgba(36, 72, 61, 0.1), 0 20px 28px -6px rgba(36, 72, 61, 0.08);
+  transform: translateY(-3px);
+  border-color: rgba(255, 42, 133, 0.6);
+  box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.9), 0 0 30px rgba(255, 42, 133, 0.3);
 }
 
 .cartoon-btn-3d {
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.4), 0 0 15px rgba(255, 42, 133, 0.4);
   transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .cartoon-btn-3d:active {
   transform: translateY(3px);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4), 0 0 8px rgba(255, 42, 133, 0.2);
 }
 
 /* High visibility keyboard focus state */
 :focus-visible {
-  outline: 3px solid #24483D;
+  outline: 3px solid #ff2a85;
   outline-offset: 3px;
   border-radius: 12px;
 }
@@ -111,22 +231,20 @@ select,
 
 /* High contrast mode overrides */
 .high-contrast {
-  --bg-main: #0C1210;
-  --text-main: #FFFDF7;
-  --text-muted: #D3E5DC;
-  --card-bg: #15221E;
-  --card-border: #FFF0B3;
-  --shadow-warm: 0 0 0 2px #FFF0B3;
-  --shadow-warm-hover: 0 0 0 3px #FFF0B3;
-  --focus-ring: #FFF0B3;
+  --bg-main: #000000;
+  --text-main: #ffffff;
+  --text-muted: #ffff80;
+  --card-bg: #05010a;
+  --card-border: #00f5ff;
+  --focus-ring: #00f5ff;
 }
 
 .high-contrast .cartoon-card {
-  box-shadow: 0 0 0 2px #FFF0B3 !important;
+  box-shadow: 0 0 0 2px #00f5ff !important;
+  border-color: #00f5ff !important;
 }
 
 .high-contrast :focus-visible {
-  outline: 3px solid #FFF0B3 !important;
+  outline: 3px solid #00f5ff !important;
   outline-offset: 3px;
 }
-

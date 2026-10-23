@@ -38,34 +38,38 @@ export const AdventureMapPage: React.FC = () => {
     setSearchParams({ world: wId })
   }
 
-  // World color styling map
+  // World color styling map with neon accents
   const worldTabStyles: Record<
     WorldId,
-    { activeBg: string; activeText: string; borderColor: string; icon: React.ReactNode }
+    { activeBg: string; activeText: string; activeBorder: string; icon: React.ReactNode; glowColor: string }
   > = {
     writing: {
-      activeBg: 'bg-[#FFE0CC]',
-      activeText: 'text-[#7A3300]',
-      borderColor: 'border-[#F8D2B8]',
-      icon: <BookOpen className="w-4 h-4" aria-hidden="true" />,
+      activeBg: 'bg-[#ff2a85]/20',
+      activeText: 'text-[#ff2a85]',
+      activeBorder: 'border-[#ff2a85] shadow-[0_0_20px_rgba(255,42,133,0.35)]',
+      icon: <BookOpen className="w-4 h-4 text-[#ff2a85]" aria-hidden="true" />,
+      glowColor: '#ff2a85',
     },
     speaking: {
-      activeBg: 'bg-[#E8DEFF]',
-      activeText: 'text-[#4A248A]',
-      borderColor: 'border-[#D5C2FE]',
-      icon: <Mic className="w-4 h-4" aria-hidden="true" />,
+      activeBg: 'bg-[#a855f7]/20',
+      activeText: 'text-[#c084fc]',
+      activeBorder: 'border-[#a855f7] shadow-[0_0_20px_rgba(168,85,247,0.35)]',
+      icon: <Mic className="w-4 h-4 text-[#c084fc]" aria-hidden="true" />,
+      glowColor: '#a855f7',
     },
     visual: {
-      activeBg: 'bg-[#CDEFE0]',
-      activeText: 'text-[#16563F]',
-      borderColor: 'border-[#B2E6CE]',
-      icon: <Eye className="w-4 h-4" aria-hidden="true" />,
+      activeBg: 'bg-[#00f5ff]/20',
+      activeText: 'text-[#00f5ff]',
+      activeBorder: 'border-[#00f5ff] shadow-[0_0_20px_rgba(0,245,255,0.35)]',
+      icon: <Eye className="w-4 h-4 text-[#00f5ff]" aria-hidden="true" />,
+      glowColor: '#00f5ff',
     },
     social: {
-      activeBg: 'bg-[#FFF0B3]',
-      activeText: 'text-[#664B00]',
-      borderColor: 'border-[#FCE58D]',
-      icon: <HeartHandshake className="w-4 h-4" aria-hidden="true" />,
+      activeBg: 'bg-[#ffd700]/20',
+      activeText: 'text-[#ffd700]',
+      activeBorder: 'border-[#ffd700] shadow-[0_0_20px_rgba(255,215,0,0.35)]',
+      icon: <HeartHandshake className="w-4 h-4 text-[#ffd700]" aria-hidden="true" />,
+      glowColor: '#ffd700',
     },
   }
 
@@ -83,22 +87,24 @@ export const AdventureMapPage: React.FC = () => {
     navigate(`/student/play/${activeWorldId}/${levelNumber}`)
   }
 
+  const activeStyle = worldTabStyles[activeWorldId]
+
   return (
     <div className="max-w-6xl mx-auto py-4 sm:py-8 space-y-8">
       {/* Top Navigation & Hub Action */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <Link
           to="/student/hub"
-          className="min-h-[44px] inline-flex items-center gap-2 text-sm font-extrabold text-[#24483D] hover:text-[#16563F] bg-white border border-[rgba(36,72,61,0.15)] px-4 py-2.5 rounded-2xl shadow-xs transition-colors focus:outline-none focus:ring-3 focus:ring-[#24483D]"
+          className="min-h-[44px] inline-flex items-center gap-2 text-sm font-extrabold text-pink-300 hover:text-white bg-[#0e0520] border border-[#a855f7]/40 hover:border-[#ff2a85]/60 px-4 py-2.5 rounded-2xl shadow-xs transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff2a85]"
         >
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           <span>Back to Student Hub</span>
         </Link>
 
         <div className="flex items-center gap-3">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FFFBE6] border border-[#FCE58D] text-xs font-extrabold text-[#664B00]">
-            <Star className="w-3.5 h-3.5 fill-[#FCE58D]" aria-hidden="true" />
-            <span>{totalStars} Stars</span>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#160a33] border border-[#ffd700]/60 text-xs font-extrabold text-[#ffd700] shadow-[0_0_15px_rgba(255,215,0,0.2)]">
+            <Star className="w-3.5 h-3.5 fill-[#ffd700]" aria-hidden="true" />
+            <span>{totalStars} Bloom Stars</span>
           </div>
 
           {/* Persistence Indicator */}
@@ -106,8 +112,8 @@ export const AdventureMapPage: React.FC = () => {
             title={persistenceInfo.description}
             className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-bold ${
               persistenceInfo.isCloudSynced
-                ? 'bg-[#CDEFE0] border-[#B2E6CE] text-[#16563F]'
-                : 'bg-[#FFFBE6] border-[#FCE58D] text-[#664B00]'
+                ? 'bg-[#00f5ff]/15 border-[#00f5ff]/50 text-[#00f5ff]'
+                : 'bg-[#ffd700]/15 border-[#ffd700]/50 text-[#ffd700]'
             }`}
           >
             <Info className="w-4 h-4 shrink-0" aria-hidden="true" />
@@ -130,10 +136,10 @@ export const AdventureMapPage: React.FC = () => {
                 key={wId}
                 type="button"
                 onClick={() => handleSelectWorld(wId)}
-                className={`min-h-[64px] p-3.5 rounded-2xl border-2 text-left flex flex-col justify-between transition-all focus:outline-none focus:ring-3 focus:ring-[#24483D] ${
+                className={`min-h-[64px] p-3.5 rounded-2xl border-2 text-left flex flex-col justify-between transition-all focus:outline-none focus:ring-2 focus:ring-[#ff2a85] ${
                   isCurrent
-                    ? `${style.activeBg} ${style.activeText} ${style.borderColor} shadow-xs scale-[1.02]`
-                    : 'bg-white border-[rgba(36,72,61,0.12)] text-[#24483D] hover:bg-[#F2FAF6]'
+                    ? `${style.activeBg} ${style.activeText} ${style.activeBorder} scale-[1.02]`
+                    : 'bg-[#0e0520] border-[#a855f7]/30 text-purple-200 hover:border-[#ff2a85]/50 hover:bg-[#160a33]'
                 }`}
                 aria-pressed={isCurrent}
                 aria-label={`${world.title}: ${summary.completedLevels} of 50 levels completed`}
@@ -151,23 +157,23 @@ export const AdventureMapPage: React.FC = () => {
         </div>
       </nav>
 
-      {/* Active World Overview Banner with Realistic World Artwork */}
+      {/* Active World Overview Banner with Illustrated World Artwork */}
       <section
         aria-labelledby="world-banner-title"
-        className="rounded-3xl bg-white border-2 border-[rgba(36,72,61,0.15)] shadow-xs overflow-hidden"
+        className={`rounded-3xl bg-[#0e0520] border-2 ${activeStyle.activeBorder} shadow-xs overflow-hidden`}
       >
-        <div className="relative w-full aspect-[21/9] sm:aspect-[16/6] bg-slate-900 overflow-hidden">
+        <div className="relative w-full aspect-[21/9] sm:aspect-[16/6] bg-[#06020e] overflow-hidden">
           <WorldScene worldId={activeWorldId} className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0e0520] via-transparent to-transparent pointer-events-none" />
 
           {/* Floating Companion Avatar in Banner */}
-          <div className="absolute bottom-4 right-4 flex items-center gap-3 bg-white/95 backdrop-blur-xs p-2 rounded-2xl shadow-md border border-white">
+          <div className="absolute bottom-4 right-4 flex items-center gap-3 bg-[#160a33]/90 backdrop-blur-md p-2 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.5)] border border-[#ff2a85]/40">
             <CompanionAvatar id={activeWorldId} size="md" />
             <div className="pr-2">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#3D6355] block">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-pink-300 block">
                 Guide Companion
               </span>
-              <span className="text-xs font-black text-[#24483D]">
+              <span className="text-xs font-black text-white">
                 {activeWorldId === 'writing' && 'Barnaby Bear'}
                 {activeWorldId === 'speaking' && 'Pip Bunny'}
                 {activeWorldId === 'social' && 'Koa Panda'}
@@ -181,29 +187,29 @@ export const AdventureMapPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#CDEFE0] text-[#16563F] font-extrabold uppercase">
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#ff2a85]/20 text-pink-300 border border-[#ff2a85]/40 font-extrabold uppercase">
                   50 Adventure Levels
                 </span>
-                <span className="text-xs text-[#3D6355] font-semibold">5 Tasks Per Level</span>
+                <span className="text-xs text-purple-200/80 font-semibold">5 Tasks Per Level</span>
               </div>
-              <h1 id="world-banner-title" className="text-2xl sm:text-3xl font-extrabold font-fredoka text-[#24483D] mt-1">
+              <h1 id="world-banner-title" className="text-2xl sm:text-3xl font-extrabold font-fredoka text-white mt-1">
                 {currentWorld.title} &bull; {currentWorld.subtitle}
               </h1>
-              <p className="text-xs sm:text-sm text-[#3D6355] font-medium">
+              <p className="text-xs sm:text-sm text-purple-200/80 font-medium">
                 {currentWorld.description}
               </p>
             </div>
 
-            <div className="w-full sm:w-64 bg-[#FFFDF7] p-4 rounded-2xl border border-[rgba(36,72,61,0.12)] space-y-1.5 shrink-0">
-              <div className="flex justify-between text-xs font-bold text-[#24483D]">
-                <span>Progress</span>
-                <span>
-                  {worldSummary.completedLevels} of {worldSummary.totalLevels} ({worldSummary.percentage}%)
+            <div className="w-full sm:w-64 bg-[#160a33] p-4 rounded-2xl border border-[#a855f7]/40 space-y-2 shrink-0">
+              <div className="flex justify-between text-xs font-bold text-white">
+                <span className="text-purple-200">World Progress</span>
+                <span className="font-mono text-[#00f5ff]">
+                  {worldSummary.completedLevels} / {worldSummary.totalLevels} ({worldSummary.percentage}%)
                 </span>
               </div>
-              <div className="w-full h-3 bg-[rgba(36,72,61,0.1)] rounded-full overflow-hidden">
+              <div className="w-full h-3 bg-[#06020e] rounded-full overflow-hidden border border-[#a855f7]/30">
                 <div
-                  className="h-full bg-[#24483D] transition-all duration-500 rounded-full"
+                  className="h-full bg-gradient-to-r from-[#ff2a85] via-[#a855f7] to-[#00f5ff] transition-all duration-500 rounded-full shadow-[0_0_10px_#ff2a85]"
                   style={{ width: `${worldSummary.percentage}%` }}
                 />
               </div>
@@ -223,21 +229,21 @@ export const AdventureMapPage: React.FC = () => {
             <section
               key={band.key}
               aria-labelledby={`band-${band.key}-title`}
-              className="p-6 sm:p-8 rounded-3xl bg-white border-2 border-[rgba(36,72,61,0.12)] shadow-xs space-y-5"
+              className="p-6 sm:p-8 rounded-3xl bg-[#0e0520] border-2 border-[#a855f7]/30 shadow-xs space-y-5"
             >
-              <div className="border-b border-[rgba(36,72,61,0.08)] pb-3 flex items-center justify-between">
+              <div className="border-b border-[#a855f7]/20 pb-3 flex items-center justify-between">
                 <div>
                   <h2
                     id={`band-${band.key}-title`}
-                    className="text-lg sm:text-xl font-extrabold font-fredoka text-[#24483D]"
+                    className="text-lg sm:text-xl font-extrabold font-fredoka text-white"
                   >
                     {band.title}
                   </h2>
-                  <p className="text-xs text-[#3D6355] font-medium">
+                  <p className="text-xs text-purple-200/70 font-medium">
                     Sequential mastery path for Grade 3 learners
                   </p>
                 </div>
-                <Sparkles className="w-4 h-4 text-[#8A6400]" aria-hidden="true" />
+                <Sparkles className="w-4 h-4 text-[#ffd700]" aria-hidden="true" />
               </div>
 
               {/* Grid of Level Nodes */}
@@ -254,50 +260,50 @@ export const AdventureMapPage: React.FC = () => {
                       type="button"
                       disabled={isLocked}
                       onClick={() => handleLevelClick(level.levelNumber, status)}
-                      className={`min-h-[96px] p-3 rounded-2xl border-2 flex flex-col justify-between text-left transition-all focus:outline-none focus:ring-3 focus:ring-[#24483D] ${
+                      className={`min-h-[96px] p-3 rounded-2xl border-2 flex flex-col justify-between text-left transition-all focus:outline-none focus:ring-2 focus:ring-[#ff2a85] ${
                         isCompleted
-                          ? 'bg-[#F2FAF6] border-[#B2E6CE] hover:border-[#24483D] cursor-pointer shadow-xs'
+                          ? 'bg-[#160a33] border-[#ffd700]/60 hover:border-[#ffd700] cursor-pointer shadow-[0_0_12px_rgba(255,215,0,0.15)]'
                           : isAvailable
-                          ? 'bg-white border-[#24483D] hover:bg-[#F2FAF6] ring-2 ring-[#CDEFE0] cursor-pointer shadow-xs scale-102'
-                          : 'bg-[#F5F4F0] border-[rgba(36,72,61,0.1)] text-[#3D6355]/50 cursor-not-allowed opacity-60'
+                          ? 'bg-[#ff2a85]/15 border-[#ff2a85] hover:bg-[#ff2a85]/25 cursor-pointer shadow-[0_0_20px_rgba(255,42,133,0.35)] scale-102 ring-2 ring-[#ff2a85]/40'
+                          : 'bg-[#06020e]/80 border-[#a855f7]/20 text-purple-300/40 cursor-not-allowed opacity-50'
                       }`}
                       aria-label={`Level ${level.levelNumber}: ${level.title}. Status: ${status}`}
                     >
                       <div className="flex items-center justify-between">
                         <span
-                          className={`w-7 h-7 rounded-full text-xs font-extrabold flex items-center justify-center ${
+                          className={`w-7 h-7 rounded-full text-xs font-extrabold flex items-center justify-center font-mono ${
                             isCompleted
-                              ? 'bg-[#CDEFE0] text-[#16563F]'
+                              ? 'bg-[#ffd700]/20 text-[#ffd700] border border-[#ffd700]/60'
                               : isAvailable
-                              ? 'bg-[#24483D] text-[#FFFDF7]'
-                              : 'bg-slate-200 text-slate-500'
+                              ? 'bg-[#ff2a85] text-white shadow-[0_0_8px_#ff2a85]'
+                              : 'bg-[#160a33] text-purple-400'
                           }`}
                         >
                           {level.levelNumber}
                         </span>
 
                         {isCompleted && (
-                          <div className="flex items-center text-[#8A6400]" title="3 Stars Earned">
-                            <Star className="w-4 h-4 fill-[#FFF0B3]" />
+                          <div className="flex items-center text-[#ffd700]" title="3 Stars Earned">
+                            <Star className="w-4 h-4 fill-[#ffd700]" />
                           </div>
                         )}
 
                         {isAvailable && (
-                          <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-[#CDEFE0] text-[#16563F]">
+                          <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-[#ff2a85] text-white shadow-[0_0_6px_#ff2a85]">
                             Play
                           </span>
                         )}
 
                         {isLocked && (
-                          <Lock className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
+                          <Lock className="w-3.5 h-3.5 text-purple-400/50" aria-hidden="true" />
                         )}
                       </div>
 
                       <div className="mt-2">
-                        <h3 className="font-extrabold text-xs text-[#24483D] line-clamp-1">
+                        <h3 className={`font-extrabold text-xs line-clamp-1 ${isLocked ? 'text-purple-300/40' : 'text-white'}`}>
                           {level.title}
                         </h3>
-                        <p className="text-[10px] text-[#3D6355] line-clamp-1 font-medium mt-0.5">
+                        <p className="text-[10px] text-purple-200/70 line-clamp-1 font-medium mt-0.5">
                           {isCompleted ? 'Replay available' : isAvailable ? 'Current level' : 'Complete previous'}
                         </p>
                       </div>
