@@ -232,6 +232,82 @@ END;
 $$;
 
 -- ---------------------------------------------------------------------
+-- 4b. SECURE RPC: ENROLL STUDENT IN CLASSROOM BY REGISTRATION CODE
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.enroll_student_in_classroom(
+  p_class_id UUID,
+  p_registration_code TEXT
+)
+RETURNS jsonb
+SECURITY DEFINER
+SET search_path = public, pg_temp
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_teacher_id UUID;
+  v_student_id UUID;
+  v_clean_reg TEXT;
+  v_class RECORD;
+  v_student RECORD;
+BEGIN
+  -- 1. Check authenticated caller
+  v_teacher_id := auth.uid();
+  IF v_teacher_id IS NULL THEN
+    RAISE EXCEPTION 'Authentication required.';
+  END IF;
+
+  -- 2. Verify teacher owns classroom
+  SELECT id, name, class_code, grade_level, teacher_id
+  INTO v_class
+  FROM public.classes
+  WHERE id = p_class_id AND teacher_id = v_teacher_id;
+
+  IF v_class.id IS NULL THEN
+    RAISE EXCEPTION 'Classroom not found or you are not authorized to enroll learners into this classroom.';
+  END IF;
+
+  -- 3. Sanitize registration code
+  v_clean_reg := UPPER(trim(p_registration_code));
+  IF char_length(v_clean_reg) < 3 THEN
+    RAISE EXCEPTION 'Please provide a valid student registration code.';
+  END IF;
+
+  -- 4. Lookup student profile
+  SELECT id, display_name, registration_number, grade_level, avatar_id, role, created_at
+  INTO v_student
+  FROM public.profiles
+  WHERE UPPER(trim(registration_number)) = v_clean_reg;
+
+  IF v_student.id IS NULL THEN
+    RAISE EXCEPTION 'No learner found with registration code "%". Please verify the code or have the student register.', v_clean_reg;
+  END IF;
+
+  IF v_student.role != 'student' THEN
+    RAISE EXCEPTION 'The registration code belongs to a % account, not a student.', v_student.role;
+  END IF;
+
+  -- 5. Atomically insert or update enrollment
+  INSERT INTO public.class_students (class_id, student_id, created_at)
+  VALUES (v_class.id, v_student.id, now())
+  ON CONFLICT (student_id) DO UPDATE
+  SET class_id = EXCLUDED.class_id,
+      created_at = now();
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'student_id', v_student.id,
+    'display_name', v_student.display_name,
+    'registration_number', v_student.registration_number,
+    'grade_level', v_student.grade_level,
+    'avatar_id', coalesce(v_student.avatar_id, 'panda'),
+    'class_id', v_class.id,
+    'class_name', v_class.name,
+    'class_code', v_class.class_code
+  );
+END;
+$$;
+
+-- ---------------------------------------------------------------------
 -- 5. PERMISSIONS & RLS VERIFICATION
 -- ---------------------------------------------------------------------
 REVOKE ALL ON FUNCTION public.join_classroom_by_code(TEXT) FROM PUBLIC, anon;
@@ -242,6 +318,9 @@ GRANT EXECUTE ON FUNCTION public.regenerate_classroom_code(UUID) TO authenticate
 
 REVOKE ALL ON FUNCTION public.ensure_teacher_classroom(TEXT) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.ensure_teacher_classroom(TEXT) TO authenticated, service_role;
+
+REVOKE ALL ON FUNCTION public.enroll_student_in_classroom(UUID, TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.enroll_student_in_classroom(UUID, TEXT) TO authenticated, service_role;
 
 -- Ensure student select policy on class_students exists and is non-recursive
 DROP POLICY IF EXISTS "class_students_student_select" ON public.class_students;

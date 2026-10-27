@@ -590,7 +590,70 @@ export const teacherService = {
 
     if (isSupabaseConfigured && supabase) {
       try {
-        // 1. Verify educator owns classroom
+        // 1. Try secure stored procedure RPC first
+        try {
+          const { data: rpcData, error: rpcErr } = await (supabase.rpc as any)(
+            'enroll_student_in_classroom',
+            {
+              p_class_id: classId,
+              p_registration_code: regUpper,
+            }
+          )
+          if (!rpcErr && rpcData && rpcData.success) {
+            const progress = await progressionService.loadFromCloud(rpcData.student_id)
+            const rewardSummary = progressionService.getRewardSummary(rpcData.student_id)
+            const completedCount = (['writing', 'speaking', 'visual', 'social'] as WorldId[]).reduce(
+              (sum, w) => sum + (progress.worlds?.[w]?.completedLevelNumbers?.length || 0),
+              0
+            )
+            const enrolledStudent: EnrolledStudent = {
+              id: rpcData.student_id,
+              displayName: rpcData.display_name,
+              registrationNumber: rpcData.registration_number || regUpper,
+              gradeLevel: rpcData.grade_level || 3,
+              avatarId: rpcData.avatar_id || 'panda',
+              className: rpcData.class_name,
+              classCode: rpcData.class_code,
+              teacherId,
+              lastActiveAt: new Date().toISOString(),
+              totalStars: rewardSummary.totalStars || 0,
+              completedLevelsCount: completedCount,
+              earnedBadgesCount: Object.keys(progress.earnedBadges || {}).length,
+              worldProgress: {
+                writing: {
+                  completedLevels: progress.worlds?.writing?.completedLevelNumbers?.length || 0,
+                  currentLevel: progress.worlds?.writing?.currentLevelNumber || 1,
+                },
+                speaking: {
+                  completedLevels: progress.worlds?.speaking?.completedLevelNumbers?.length || 0,
+                  currentLevel: progress.worlds?.speaking?.currentLevelNumber || 1,
+                },
+                visual: {
+                  completedLevels: progress.worlds?.visual?.completedLevelNumbers?.length || 0,
+                  currentLevel: progress.worlds?.visual?.currentLevelNumber || 1,
+                },
+                social: {
+                  completedLevels: progress.worlds?.social?.completedLevelNumbers?.length || 0,
+                  currentLevel: progress.worlds?.social?.currentLevelNumber || 1,
+                },
+              },
+              supportAccommodations: ['Standard Grade 3 Pacing'],
+              isDemo: false,
+            }
+            return { success: true, student: enrolledStudent }
+          } else if (
+            rpcErr &&
+            rpcErr.message &&
+            !rpcErr.message.includes('function') &&
+            !rpcErr.message.includes('does not exist')
+          ) {
+            return { success: false, error: rpcErr.message }
+          }
+        } catch (rpcEx) {
+          console.warn('RPC enroll_student_in_classroom note:', rpcEx)
+        }
+
+        // 2. Direct Fallback: Verify educator owns classroom
         const { data: classData, error: classErr } = await supabase
           .from('classes')
           .select('id, name, class_code, grade_level, teacher_id')
@@ -602,7 +665,7 @@ export const teacherService = {
           return { success: false, error: 'Classroom not found or educator not authorized.' }
         }
 
-        // 2. Find student by registration code
+        // 3. Find student by registration code
         const { data: studentProfile, error: profErr } = await supabase
           .from('profiles')
           .select('id, display_name, registration_number, grade_level, avatar_id, role, created_at')
@@ -620,17 +683,36 @@ export const teacherService = {
           return { success: false, error: 'The specified registration code does not belong to a student account.' }
         }
 
-        // 3. Upsert enrollment in class_students
-        const { error: enrollErr } = await supabase
+        // 4. Upsert enrollment in class_students (trying student_id unique constraint first, then compound)
+        let enrollErr: any = null
+        const res1 = await supabase
           .from('class_students')
           .upsert(
             { class_id: classId, student_id: studentProfile.id },
-            { onConflict: 'class_id,student_id' }
+            { onConflict: 'student_id' }
           )
+
+        if (res1.error) {
+          const res2 = await supabase
+            .from('class_students')
+            .upsert(
+              { class_id: classId, student_id: studentProfile.id },
+              { onConflict: 'class_id,student_id' }
+            )
+          enrollErr = res2.error
+        }
 
         if (enrollErr) {
           return { success: false, error: `Failed to enroll learner: ${enrollErr.message}` }
         }
+
+        const progress = await progressionService.loadFromCloud(studentProfile.id)
+
+        const rewardSummary = progressionService.getRewardSummary(studentProfile.id)
+        const completedCount = (['writing', 'speaking', 'visual', 'social'] as WorldId[]).reduce(
+          (sum, w) => sum + (progress.worlds?.[w]?.completedLevelNumbers?.length || 0),
+          0
+        )
 
         const enrolledStudent: EnrolledStudent = {
           id: studentProfile.id,
@@ -642,14 +724,26 @@ export const teacherService = {
           classCode: classData.class_code,
           teacherId,
           lastActiveAt: studentProfile.created_at,
-          totalStars: 0,
-          completedLevelsCount: 0,
-          earnedBadgesCount: 0,
+          totalStars: rewardSummary.totalStars || 0,
+          completedLevelsCount: completedCount,
+          earnedBadgesCount: Object.keys(progress.earnedBadges || {}).length,
           worldProgress: {
-            writing: { completedLevels: 0, currentLevel: 1 },
-            speaking: { completedLevels: 0, currentLevel: 1 },
-            visual: { completedLevels: 0, currentLevel: 1 },
-            social: { completedLevels: 0, currentLevel: 1 },
+            writing: {
+              completedLevels: progress.worlds?.writing?.completedLevelNumbers?.length || 0,
+              currentLevel: progress.worlds?.writing?.currentLevelNumber || 1,
+            },
+            speaking: {
+              completedLevels: progress.worlds?.speaking?.completedLevelNumbers?.length || 0,
+              currentLevel: progress.worlds?.speaking?.currentLevelNumber || 1,
+            },
+            visual: {
+              completedLevels: progress.worlds?.visual?.completedLevelNumbers?.length || 0,
+              currentLevel: progress.worlds?.visual?.currentLevelNumber || 1,
+            },
+            social: {
+              completedLevels: progress.worlds?.social?.completedLevelNumbers?.length || 0,
+              currentLevel: progress.worlds?.social?.currentLevelNumber || 1,
+            },
           },
           supportAccommodations: ['Standard Grade 3 Pacing'],
           isDemo: false,

@@ -139,13 +139,18 @@ export const TeacherDashboardPage: React.FC = () => {
     )
 
     if (result.success && result.student) {
+      const newStudent = result.student
+      setStudents((prev) => {
+        const filtered = prev.filter((s) => s.id !== newStudent.id)
+        return [newStudent, ...filtered]
+      })
       setEnrollSuccess(`Successfully enrolled ${result.student.displayName} (${result.student.registrationNumber})!`)
       setEnrollCode('')
       loadData()
       setTimeout(() => {
         setIsEnrollModalOpen(false)
         setEnrollSuccess(null)
-      }, 1800)
+      }, 1500)
     } else {
       setEnrollError(result.error || 'Failed to enroll student.')
     }
