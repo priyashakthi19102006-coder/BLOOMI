@@ -250,3 +250,33 @@ CREATE POLICY "class_students_student_select"
   FOR SELECT
   TO authenticated
   USING (student_id = auth.uid());
+
+-- ---------------------------------------------------------------------
+-- 6. IDEMPOTENT INITIAL CLASSROOM PROVISIONING (BLOOMI-3A)
+-- ---------------------------------------------------------------------
+DO $$
+DECLARE
+  v_first_teacher_id UUID;
+BEGIN
+  -- Look for the first authenticated educator in profiles
+  SELECT id INTO v_first_teacher_id 
+  FROM public.profiles 
+  WHERE role IN ('teacher', 'admin') 
+  ORDER BY created_at ASC 
+  LIMIT 1;
+
+  IF v_first_teacher_id IS NOT NULL THEN
+    -- If this educator does not have a classroom yet, provision one
+    IF NOT EXISTS (SELECT 1 FROM public.classes WHERE teacher_id = v_first_teacher_id) THEN
+      IF NOT EXISTS (SELECT 1 FROM public.classes WHERE UPPER(trim(class_code)) = 'BLOOMI-3A') THEN
+        INSERT INTO public.classes (name, grade_level, teacher_id, class_code)
+        VALUES ('Grade 3 Blossom Explorers', 3, v_first_teacher_id, 'BLOOMI-3A');
+      ELSE
+        INSERT INTO public.classes (name, grade_level, teacher_id, class_code)
+        VALUES ('Grade 3 Blossom Explorers', 3, v_first_teacher_id, 'BLOOM-3A01');
+      END IF;
+    END IF;
+  END IF;
+END;
+$$;
+
