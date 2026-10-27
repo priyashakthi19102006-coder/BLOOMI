@@ -23,12 +23,12 @@ import { CompanionAvatar } from '../components/worlds/CompanionAvatar'
 
 export const StudentReportPage: React.FC = () => {
   const { studentId } = useParams<{ studentId: string }>()
-  const { user } = useAuth()
+  const { user, profile, isConfigured } = useAuth()
 
   const accessibility = useOutletContext<AccessibilityContextType | undefined>()
   const highContrast = accessibility?.highContrast ?? false
 
-  const teacherId = user?.id || 'demo_teacher_id'
+  const teacherId = user?.id || profile?.id || (isConfigured ? '' : 'demo_teacher_id')
 
   const [report, setReport] = useState<StudentLearningReport | null>(null)
   const [isAuthorized, setIsAuthorized] = useState<boolean>(true)
@@ -56,6 +56,12 @@ export const StudentReportPage: React.FC = () => {
 
   const loadReport = async () => {
     if (!studentId) return
+    if (!teacherId) {
+      setIsAuthorized(false)
+      setErrorMessage('Authorization Denied: Please sign in with an authorized educator account.')
+      setIsLoading(false)
+      return
+    }
     setIsLoading(true)
     const result = await teacherService.getStudentLearningReport(teacherId, studentId)
     setIsAuthorized(result.authorized)

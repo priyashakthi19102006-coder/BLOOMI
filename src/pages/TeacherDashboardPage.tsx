@@ -30,13 +30,13 @@ import { ConsolidatedStudentProfileModal } from '../components/ConsolidatedStude
 import { MappingDiagnosticsModal } from '../components/MappingDiagnosticsModal'
 
 export const TeacherDashboardPage: React.FC = () => {
-  const { profile, user, logout } = useAuth()
+  const { profile, user, logout, isConfigured } = useAuth()
   const navigate = useNavigate()
 
   const accessibility = useOutletContext<AccessibilityContextType | undefined>()
   const highContrast = accessibility?.highContrast ?? false
 
-  const teacherId = user?.id || profile?.id || 'demo_teacher_id'
+  const teacherId = user?.id || profile?.id || (isConfigured ? '' : 'demo_teacher_id')
 
   const [classes, setClasses] = useState<TeacherClass[]>([])
   const [students, setStudents] = useState<EnrolledStudent[]>([])
@@ -60,6 +60,10 @@ export const TeacherDashboardPage: React.FC = () => {
   const [codeFeedback, setCodeFeedback] = useState<string | null>(null)
 
   const loadData = async () => {
+    if (isConfigured && !teacherId) {
+      setIsLoading(false)
+      return
+    }
     setIsLoading(true)
     setLoadError(null)
     try {
