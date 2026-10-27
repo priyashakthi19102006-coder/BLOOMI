@@ -19,6 +19,7 @@ interface AuthContextValue {
     displayName: string,
     registrationNumber: string,
     password: string,
+    classCode: string,
     avatarId?: string
   ) => Promise<void>
   signUpTeacher: (
@@ -148,6 +149,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     displayName: string,
     registrationNumber: string,
     password: string,
+    classCode: string,
     avatarId?: string
   ) => {
     setIsLoading(true)
@@ -157,6 +159,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         displayName,
         registrationNumber,
         password,
+        classCode,
         avatarId
       )
       setSession(newSession)

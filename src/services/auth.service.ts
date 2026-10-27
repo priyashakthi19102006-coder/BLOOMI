@@ -213,6 +213,7 @@ export const authService = {
     displayName: string,
     registrationNumber: string,
     password: string,
+    classCode: string,
     avatarId: string = 'panda'
   ): Promise<{ profile: Profile; session: Session }> {
     if (!isSupabaseConfigured || !supabase) {
@@ -229,6 +230,7 @@ export const authService = {
 
     const sanitizedRegNo = registrationNumber.trim().toUpperCase()
     const sanitizedName = displayName.trim()
+    const sanitizedClassCode = classCode.trim().toUpperCase()
 
     // Dispatch to Supabase Edge Function
     const { data, error } = await supabase.functions.invoke<StudentLoginResponse>(
@@ -238,6 +240,7 @@ export const authService = {
           displayName: sanitizedName,
           registrationNumber: sanitizedRegNo,
           password,
+          classCode: sanitizedClassCode,
           avatarId,
           gradeLevel: 3,
         },

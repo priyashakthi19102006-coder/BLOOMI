@@ -355,12 +355,37 @@ export const teacherService = {
           return classesWithCounts
         }
 
-        // If authenticated teacher has no class yet, automatically provision an initial class
+        // If authenticated teacher has no class yet, automatically provision an initial class via secure RPC
+        try {
+          const { data: rpcClass, error: rpcErr } = await (supabase.rpc as any)(
+            'ensure_teacher_classroom',
+            {
+              p_class_name: 'Grade 3 Blossom Explorers',
+            }
+          )
+          if (!rpcErr && rpcClass && rpcClass.id) {
+            return [
+              {
+                id: rpcClass.id,
+                name: rpcClass.name,
+                classCode: rpcClass.class_code,
+                gradeLevel: rpcClass.grade_level,
+                teacherId: rpcClass.teacher_id,
+                studentCount: 0,
+                isDemo: false,
+              },
+            ]
+          }
+        } catch (rpcCatch) {
+          console.warn('ensure_teacher_classroom RPC note:', rpcCatch)
+        }
+
+        // Direct fallback: provision an initial class
         const initialCode = `BLOOMI-${teacherId.slice(0, 4).toUpperCase()}`
         const { data: newClass, error: insertError } = await supabase
           .from('classes')
           .insert({
-            name: 'Grade 3 Explorers',
+            name: 'Grade 3 Blossom Explorers',
             class_code: initialCode,
             grade_level: 3,
             teacher_id: teacherId,
@@ -684,7 +709,7 @@ export const teacherService = {
     if (!student) {
       return {
         authorized: false,
-        error: 'Student record could not be found.',
+        error: 'Authorization Denied: This learner is not enrolled in your assigned classroom roster.',
       }
     }
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useNavigate, useOutletContext } from 'react-router-dom'
+import { useNavigate, useOutletContext } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { teacherService, EnrolledStudent, TeacherClass } from '../services/teacher.service'
 import type { AccessibilityContextType } from '../layouts/RootLayout'
@@ -8,7 +8,6 @@ import {
   Users,
   LogOut,
   BookOpen,
-  Calendar,
   Layers,
   Search,
   ArrowRight,
@@ -22,8 +21,13 @@ import {
   Check,
   AlertCircle,
   X,
+  Stethoscope,
+  RotateCcw,
 } from 'lucide-react'
 import { CompanionAvatar } from '../components/worlds/CompanionAvatar'
+import { classroomService } from '../services/classroom.service'
+import { ConsolidatedStudentProfileModal } from '../components/ConsolidatedStudentProfileModal'
+import { MappingDiagnosticsModal } from '../components/MappingDiagnosticsModal'
 
 export const TeacherDashboardPage: React.FC = () => {
   const { profile, user, logout } = useAuth()
@@ -41,13 +45,19 @@ export const TeacherDashboardPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [loadError, setLoadError] = useState<string | null>(null)
 
-  // Enrollment modal state
+  // Modal states for consolidated student profile and diagnostics
+  const [selectedStudentForProfile, setSelectedStudentForProfile] = useState<string | null>(null)
+  const [isDiagnosticsModalOpen, setIsDiagnosticsModalOpen] = useState<boolean>(false)
+
+  // Enrollment and code regeneration states
   const [isEnrollModalOpen, setIsEnrollModalOpen] = useState<boolean>(false)
   const [enrollCode, setEnrollCode] = useState<string>('')
   const [enrollError, setEnrollError] = useState<string | null>(null)
   const [enrollSuccess, setEnrollSuccess] = useState<string | null>(null)
   const [isEnrolling, setIsEnrolling] = useState<boolean>(false)
   const [hasCopiedCode, setHasCopiedCode] = useState<boolean>(false)
+  const [isRegeneratingCode, setIsRegeneratingCode] = useState<boolean>(false)
+  const [codeFeedback, setCodeFeedback] = useState<string | null>(null)
 
   const loadData = async () => {
     setIsLoading(true)
@@ -70,7 +80,38 @@ export const TeacherDashboardPage: React.FC = () => {
   const handleCopyClassCode = (code: string) => {
     navigator.clipboard.writeText(code)
     setHasCopiedCode(true)
-    setTimeout(() => setHasCopiedCode(false), 2500)
+    setCodeFeedback('Classroom code copied to clipboard!')
+    setTimeout(() => {
+      setHasCopiedCode(false)
+      setCodeFeedback(null)
+    }, 2500)
+  }
+
+  const handleRegenerateCode = async () => {
+    const activeClass = classes[0]
+    if (!activeClass) return
+
+    const confirmRegenerate = window.confirm(
+      `Generate a new joining code for "${activeClass.name}"? Previously enrolled students remain enrolled, but new students must use the new code.`
+    )
+    if (!confirmRegenerate) return
+
+    setIsRegeneratingCode(true)
+    setCodeFeedback(null)
+    try {
+      const res = await classroomService.regenerateClassCode(teacherId, activeClass.id)
+      if (res.success && res.newCode) {
+        setClasses((prev) =>
+          prev.map((c) => (c.id === activeClass.id ? { ...c, classCode: res.newCode! } : c))
+        )
+        setCodeFeedback(`New classroom code generated: ${res.newCode}`)
+        setTimeout(() => setCodeFeedback(null), 4000)
+      } else {
+        alert(res.error || 'Failed to regenerate classroom code.')
+      }
+    } finally {
+      setIsRegeneratingCode(false)
+    }
   }
 
   const handleEnrollSubmit = async (e: React.FormEvent) => {
@@ -178,6 +219,16 @@ export const TeacherDashboardPage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
+              onClick={() => setIsDiagnosticsModalOpen(true)}
+              className="min-h-[44px] flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#160a33] hover:bg-[#200e47] border border-[#a855f7]/60 text-[#f5d0fe] text-xs font-bold transition-all shadow-[0_0_12px_rgba(168,85,247,0.25)]"
+              title="Run System Mapping Health Check"
+            >
+              <Stethoscope className="w-3.5 h-3.5 text-[#00f5ff]" />
+              <span>Mapping Health Check</span>
+            </button>
+
+            <button
+              type="button"
               onClick={loadData}
               disabled={isLoading}
               className="min-h-[44px] flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#160a33] hover:bg-[#200e47] border border-[#00f5ff]/40 text-[#00f5ff] text-xs font-bold transition-all shadow-[0_0_10px_rgba(0,245,255,0.2)]"
@@ -268,40 +319,70 @@ export const TeacherDashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* Classroom Information Card */}
-      <div className="p-5 sm:p-7 rounded-3xl border-2 border-[#a855f7]/30 bg-[#0e0520] shadow-[0_10px_30px_rgba(0,0,0,0.6)] text-[#fdf4ff] space-y-5">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#a855f7]/20 pb-4">
-          <div className="space-y-1">
-            <h2 className="text-xl font-bold font-fredoka text-white">
+      {/* My Classroom Section */}
+      <div className="p-5 sm:p-7 rounded-3xl border-2 border-[#a855f7]/30 bg-[#0e0520] shadow-[0_10px_30px_rgba(0,0,0,0.6)] text-[#fdf4ff] space-y-6">
+        {/* Header: Classroom Name, Joining Code, Copy & Regenerate Actions */}
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 border-b border-[#a855f7]/20 pb-5">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="text-xs px-2.5 py-0.5 rounded-full font-extrabold uppercase tracking-wider bg-[#00f5ff]/15 text-[#00f5ff] border border-[#00f5ff]/30">
+                My Classroom
+              </span>
+              <span className="text-xs text-[#d8b4fe]">
+                Grade {activeClass?.gradeLevel || 3}
+              </span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold font-fredoka text-white">
               {activeClass?.name || 'Classroom • Grade 3 Blossom Explorers'}
             </h2>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-[#d8b4fe]">
-              <span>Class Invitation Code:</span>
-              <code className="font-mono bg-[#160a33] text-[#00f5ff] px-2.5 py-1 rounded-lg font-bold border border-[#00f5ff]/40 shadow-[0_0_8px_rgba(0,245,255,0.3)]">
+            <div className="flex flex-wrap items-center gap-2.5 pt-1 text-xs text-[#d8b4fe]">
+              <span className="font-semibold text-white">Classroom Joining Code:</span>
+              <code className="font-mono bg-[#160a33] text-[#00f5ff] px-3 py-1.5 rounded-xl font-extrabold text-sm border-2 border-[#00f5ff]/50 shadow-[0_0_12px_rgba(0,245,255,0.3)] tracking-wider">
                 {activeClass?.classCode || 'BLOOMI-3A'}
               </code>
               <button
                 type="button"
                 onClick={() => handleCopyClassCode(activeClass?.classCode || 'BLOOMI-3A')}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#160a33] hover:bg-[#200e47] border border-[#a855f7]/40 text-[#f5d0fe] text-xs font-bold transition-all"
-                title="Copy class code to clipboard"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#160a33] hover:bg-[#200e47] border border-[#00f5ff]/50 text-[#00f5ff] text-xs font-bold transition-all shadow-sm"
+                title="Copy joining code for your students"
               >
                 {hasCopiedCode ? (
                   <>
                     <Check className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="text-emerald-400">Copied!</span>
+                    <span className="text-emerald-400">Copied Code!</span>
                   </>
                 ) : (
                   <>
                     <Copy className="w-3.5 h-3.5 text-[#00f5ff]" />
-                    <span>Copy</span>
+                    <span>Copy Joining Code</span>
                   </>
                 )}
               </button>
+              <button
+                type="button"
+                onClick={handleRegenerateCode}
+                disabled={isRegeneratingCode}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#160a33] hover:bg-[#200e47] border border-[#a855f7]/50 text-[#d8b4fe] hover:text-white text-xs font-semibold transition-all"
+                title="Regenerate a new secure code"
+              >
+                <RotateCcw className={`w-3.5 h-3.5 text-[#a855f7] ${isRegeneratingCode ? 'animate-spin' : ''}`} />
+                <span>{isRegeneratingCode ? 'Regenerating...' : 'Regenerate Code'}</span>
+              </button>
             </div>
+            {codeFeedback && (
+              <p className="text-xs text-emerald-400 font-semibold animate-fade-in flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5" />
+                {codeFeedback}
+              </p>
+            )}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="px-4 py-2 rounded-2xl bg-[#160a33] border border-[#a855f7]/40 text-center">
+              <span className="block text-[11px] font-bold uppercase tracking-wider text-[#d8b4fe]">Enrolled Students</span>
+              <span className="text-xl font-extrabold font-fredoka text-white">{students.length}</span>
+            </div>
+
             <button
               type="button"
               onClick={() => {
@@ -314,15 +395,10 @@ export const TeacherDashboardPage: React.FC = () => {
               <UserPlus className="w-4 h-4" aria-hidden="true" />
               <span>Enroll Learner</span>
             </button>
-
-            <div className="text-xs text-[#d8b4fe] hidden sm:flex items-center gap-1.5 font-medium">
-              <Calendar className="w-4 h-4 text-[#ffd700]" aria-hidden="true" />
-              <span>2026–2027</span>
-            </div>
           </div>
         </div>
 
-        {/* Search & Filter Toolbar */}
+        {/* Search by Name or Registration Number & Filter Toolbar */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
           <div className="relative flex-1 max-w-md">
             <Search
@@ -333,7 +409,7 @@ export const TeacherDashboardPage: React.FC = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by learner name or registration ID..."
+              placeholder="Search students by name or registration number..."
               className="w-full min-h-[44px] pl-10 pr-4 py-2 rounded-xl text-xs sm:text-sm border border-[#a855f7]/40 bg-[#160a33] text-white placeholder-[#9382ad] focus:outline-none focus:ring-3 focus:ring-[#ff2a85]"
             />
           </div>
@@ -359,7 +435,7 @@ export const TeacherDashboardPage: React.FC = () => {
         <div className="space-y-3 pt-2">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-[#d8b4fe]">
-              Authorized Learner Roster ({filteredStudents.length} Students)
+              Classroom Roster ({filteredStudents.length} of {students.length} Students)
             </h3>
             {filteredStudents.length > 0 && (
               <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
@@ -375,27 +451,46 @@ export const TeacherDashboardPage: React.FC = () => {
             </div>
           ) : filteredStudents.length === 0 ? (
             /* Empty State */
-            <div className="py-12 px-4 rounded-2xl bg-[#160a33] border-2 border-dashed border-[#a855f7]/30 text-center space-y-4">
-              <Users className="w-10 h-10 text-[#a855f7] mx-auto opacity-70" aria-hidden="true" />
-              <div className="space-y-1">
-                <h4 className="font-extrabold text-base text-white">
-                  {students.length === 0 ? 'No Students Currently Enrolled' : 'No Matching Learners Found'}
+            <div className="py-12 px-6 rounded-2xl bg-[#160a33] border-2 border-dashed border-[#a855f7]/40 text-center space-y-4">
+              <Users className="w-12 h-12 text-[#a855f7] mx-auto opacity-70" aria-hidden="true" />
+              <div className="space-y-2">
+                <h4 className="font-extrabold text-lg text-white">
+                  {students.length === 0 ? 'No Students Currently Enrolled' : 'No Matching Students Found'}
                 </h4>
-                <p className="text-xs text-[#d8b4fe] max-w-md mx-auto leading-relaxed">
-                  {students.length === 0
-                    ? `Students join this classroom automatically when registering with your classroom code: ${activeClass?.classCode || 'BLOOMI-3A'}. You can also directly enroll existing student accounts.`
-                    : 'Try adjusting your search keywords or clearing world filters.'}
+                <p className="text-xs text-[#d8b4fe] max-w-lg mx-auto leading-relaxed">
+                  {students.length === 0 ? (
+                    <>
+                      To invite students, share your classroom joining code:{' '}
+                      <strong className="text-[#00f5ff] font-mono text-sm px-2 py-0.5 rounded bg-[#0e0520] border border-[#00f5ff]/30">
+                        {activeClass?.classCode || 'BLOOMI-3A'}
+                      </strong>
+                      .<br />
+                      During student registration, students enter this code and will automatically appear in your classroom roster.
+                    </>
+                  ) : (
+                    'Try adjusting your search keywords or clearing world filters.'
+                  )}
                 </p>
               </div>
               {students.length === 0 && (
-                <button
-                  type="button"
-                  onClick={() => setIsEnrollModalOpen(true)}
-                  className="btn-neon-pink min-h-[44px] inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  <span>Enroll Learner by Code</span>
-                </button>
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => handleCopyClassCode(activeClass?.classCode || 'BLOOMI-3A')}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#00f5ff]/15 hover:bg-[#00f5ff]/25 border border-[#00f5ff]/40 text-[#00f5ff] text-xs font-bold transition-all"
+                  >
+                    <Copy className="w-4 h-4" />
+                    <span>Copy Joining Code</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEnrollModalOpen(true)}
+                    className="btn-neon-pink min-h-[44px] inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    <span>Directly Enroll by Reg ID</span>
+                  </button>
+                </div>
               )}
             </div>
           ) : (
@@ -404,7 +499,7 @@ export const TeacherDashboardPage: React.FC = () => {
                 return (
                   <div
                     key={student.id}
-                    className="p-5 rounded-2xl border-2 border-[#a855f7]/30 bg-[#160a33] flex flex-col justify-between gap-4 shadow-[0_4px_20px_rgba(0,0,0,0.5)] hover:border-[#ff2a85] transition-all"
+                    className="p-5 rounded-2xl border-2 border-[#a855f7]/30 bg-[#160a33] flex flex-col justify-between gap-4 shadow-[0_4px_20px_rgba(0,0,0,0.5)] hover:border-[#00f5ff]/60 transition-all"
                   >
                     <div className="space-y-3">
                       <div className="flex items-start justify-between gap-3">
@@ -414,9 +509,14 @@ export const TeacherDashboardPage: React.FC = () => {
                             <h4 className="font-extrabold text-base font-fredoka text-white">
                               {student.displayName}
                             </h4>
-                            <span className="font-mono text-xs font-bold text-[#00f5ff]">
-                              {student.registrationNumber}
-                            </span>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="font-mono text-xs font-bold text-[#00f5ff]">
+                                {student.registrationNumber}
+                              </span>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-500/40">
+                                Active Enrollment
+                              </span>
+                            </div>
                           </div>
                         </div>
 
@@ -426,7 +526,20 @@ export const TeacherDashboardPage: React.FC = () => {
                             <Star className="w-3.5 h-3.5 fill-[#ffd700]" aria-hidden="true" />
                             <span>{student.totalStars} Stars</span>
                           </div>
+                          <div className="text-[10px] text-[#d8b4fe] mt-1">
+                            {student.lastActiveAt
+                              ? `Active ${new Date(student.lastActiveAt).toLocaleDateString()}`
+                              : 'Recently Joined'}
+                          </div>
                         </div>
+                      </div>
+
+                      {/* Progress Metrics: Completed Levels */}
+                      <div className="flex items-center justify-between text-xs px-3 py-1.5 rounded-xl bg-[#0e0520] border border-[#a855f7]/30">
+                        <span className="text-[#d8b4fe]">Completed Levels:</span>
+                        <span className="font-extrabold text-[#00f5ff]">
+                          {student.completedLevelsCount} / 200
+                        </span>
                       </div>
 
                       {/* World Progress Breakdown */}
@@ -450,26 +563,29 @@ export const TeacherDashboardPage: React.FC = () => {
                       </div>
 
                       {/* Accommodations tags */}
-                      <div className="flex flex-wrap gap-1.5">
-                        {student.supportAccommodations.map((acc, i) => (
-                          <span
-                            key={i}
-                            className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[#0e0520] border border-[#a855f7]/30 text-[#d8b4fe]"
-                          >
-                            {acc}
-                          </span>
-                        ))}
-                      </div>
+                      {student.supportAccommodations && student.supportAccommodations.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {student.supportAccommodations.map((acc, i) => (
+                            <span
+                              key={i}
+                              className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[#0e0520] border border-[#a855f7]/30 text-[#d8b4fe]"
+                            >
+                              {acc}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
-                    {/* View Report Link */}
-                    <Link
-                      to={`/teacher/students/${student.id}`}
-                      className="min-h-[44px] w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl btn-neon-purple text-xs font-extrabold shadow-sm focus:outline-none focus:ring-4 focus:ring-[#a855f7]"
+                    {/* View Student Action Button */}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedStudentForProfile(student.id)}
+                      className="min-h-[44px] w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl btn-neon-purple text-xs font-extrabold shadow-sm focus:outline-none focus:ring-4 focus:ring-[#a855f7] transition-all"
                     >
-                      <span>View Learning Report</span>
+                      <span>View Student</span>
                       <ArrowRight className="w-4 h-4" aria-hidden="true" />
-                    </Link>
+                    </button>
                   </div>
                 )
               })}
@@ -571,6 +687,25 @@ export const TeacherDashboardPage: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Consolidated Student Profile Modal */}
+      {selectedStudentForProfile && (
+        <ConsolidatedStudentProfileModal
+          isOpen={Boolean(selectedStudentForProfile)}
+          studentId={selectedStudentForProfile}
+          teacherId={teacherId}
+          onClose={() => setSelectedStudentForProfile(null)}
+        />
+      )}
+
+      {/* System Mapping Diagnostics Modal */}
+      {isDiagnosticsModalOpen && (
+        <MappingDiagnosticsModal
+          isOpen={isDiagnosticsModalOpen}
+          teacherId={teacherId}
+          onClose={() => setIsDiagnosticsModalOpen(false)}
+        />
       )}
     </div>
   )

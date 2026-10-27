@@ -194,6 +194,178 @@ export const progressionService = {
   },
 
   /**
+   * Offline sync queue key for explicitly labeled pending records
+   */
+  OFFLINE_QUEUE_KEY: 'bloomi_offline_progress_queue',
+
+  /**
+   * Add a failed progress record to the explicitly labeled offline queue.
+   */
+  enqueueOfflineProgress(
+    studentId: string,
+    worldId: WorldId,
+    levelNumber: number,
+    record: LevelProgressRecord
+  ): void {
+    try {
+      const existing = getStorageItem(this.OFFLINE_QUEUE_KEY)
+      const queue: Array<{
+        studentId: string
+        worldId: WorldId
+        levelNumber: number
+        record: LevelProgressRecord
+        queuedAt: string
+      }> = existing ? JSON.parse(existing) : []
+
+      // Deduplicate queue entry for the same student, world, and level
+      const filtered = queue.filter(
+        (item) =>
+          !(
+            item.studentId === studentId &&
+            item.worldId === worldId &&
+            item.levelNumber === levelNumber
+          )
+      )
+
+      filtered.push({
+        studentId,
+        worldId,
+        levelNumber,
+        record,
+        queuedAt: new Date().toISOString(),
+      })
+
+      setStorageItem(this.OFFLINE_QUEUE_KEY, JSON.stringify(filtered))
+    } catch (e) {
+      console.warn('Failed to enqueue offline progress item:', e)
+    }
+  },
+
+  /**
+   * Remove a level from the offline queue upon successful sync.
+   */
+  dequeueOfflineProgress(studentId: string, worldId: WorldId, levelNumber: number): void {
+    try {
+      const existing = getStorageItem(this.OFFLINE_QUEUE_KEY)
+      if (!existing) return
+      const queue: Array<{ studentId: string; worldId: WorldId; levelNumber: number }> =
+        JSON.parse(existing)
+      const filtered = queue.filter(
+        (item) =>
+          !(
+            item.studentId === studentId &&
+            item.worldId === worldId &&
+            item.levelNumber === levelNumber
+          )
+      )
+      setStorageItem(this.OFFLINE_QUEUE_KEY, JSON.stringify(filtered))
+    } catch {
+      // ignore
+    }
+  },
+
+  /**
+   * Flush any queued offline progress items to Supabase safely.
+   */
+  async flushOfflineQueue(): Promise<number> {
+    if (!isSupabaseConfigured || !supabase) return 0
+
+    try {
+      const existing = getStorageItem(this.OFFLINE_QUEUE_KEY)
+      if (!existing) return 0
+      const queue: Array<{
+        studentId: string
+        worldId: WorldId
+        levelNumber: number
+        record: LevelProgressRecord
+      }> = JSON.parse(existing)
+
+      if (queue.length === 0) return 0
+
+      let syncedCount = 0
+      const remaining: typeof queue = []
+
+      for (const item of queue) {
+        try {
+          const { error } = await supabase.from('student_level_progress').upsert(
+            {
+              student_id: item.studentId,
+              world_id: item.worldId,
+              level_number: item.levelNumber,
+              completed: item.record.completed,
+              completed_tasks: item.record.completedTasks,
+              stars_earned: item.record.starsEarned,
+              completed_task_ids: item.record.completedTaskIds || [],
+              completed_at: item.record.completedAt || null,
+              last_attempt_at: item.record.lastAttemptAt || new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'student_id,world_id,level_number' }
+          )
+
+          if (!error) {
+            syncedCount++
+          } else {
+            remaining.push(item)
+          }
+        } catch {
+          remaining.push(item)
+        }
+      }
+
+      setStorageItem(this.OFFLINE_QUEUE_KEY, JSON.stringify(remaining))
+      return syncedCount
+    } catch (e) {
+      console.warn('Error flushing offline progress queue:', e)
+      return 0
+    }
+  },
+
+  /**
+   * Save a single level record immediately to Supabase using stable database student ID.
+   */
+  async saveLevelRecordToCloud(
+    studentId: string,
+    worldId: WorldId,
+    levelNumber: number,
+    record: LevelProgressRecord
+  ): Promise<boolean> {
+    if (!isSupabaseConfigured || !supabase || studentId === 'demo_student') {
+      return false
+    }
+
+    try {
+      const { error } = await supabase.from('student_level_progress').upsert(
+        {
+          student_id: studentId,
+          world_id: worldId,
+          level_number: levelNumber,
+          completed: record.completed,
+          completed_tasks: record.completedTasks,
+          stars_earned: record.starsEarned,
+          completed_task_ids: record.completedTaskIds || [],
+          completed_at: record.completedAt || null,
+          last_attempt_at: record.lastAttemptAt || new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'student_id,world_id,level_number' }
+      )
+
+      if (!error) {
+        this.dequeueOfflineProgress(studentId, worldId, levelNumber)
+        return true
+      } else {
+        this.enqueueOfflineProgress(studentId, worldId, levelNumber, record)
+      }
+    } catch (err) {
+      console.warn('saveLevelRecordToCloud network issue, queued for sync:', err)
+      this.enqueueOfflineProgress(studentId, worldId, levelNumber, record)
+    }
+
+    return false
+  },
+
+  /**
    * Asynchronously sync progress record to Supabase if configured.
    */
   async syncToCloud(progress: StudentCurriculumProgress): Promise<void> {
@@ -208,23 +380,11 @@ export const progressionService = {
           const lvlNum = parseInt(lvlStr, 10)
           const record = worldData.levelRecords[lvlNum]
           if (record) {
-            await (supabase.from('student_level_progress') as any).upsert(
-              {
-                student_id: progress.userId,
-                world_id: worldId,
-                level_number: lvlNum,
-                completed: record.completed,
-                completed_tasks: record.completedTasks,
-                stars_earned: record.starsEarned,
-                completed_task_ids: record.completedTaskIds || [],
-                completed_at: record.completedAt || null,
-                updated_at: new Date().toISOString(),
-              },
-              { onConflict: 'student_id,world_id,level_number' }
-            )
+            await this.saveLevelRecordToCloud(progress.userId, worldId, lvlNum, record)
           }
         }
       }
+      await this.flushOfflineQueue()
     } catch (err) {
       console.warn('Supabase sync skipped or failed:', err)
     }
@@ -358,6 +518,11 @@ export const progressionService = {
 
     this.saveProgress(progress)
 
+    // Automatically persist to Supabase if authenticated
+    if (userId && userId !== 'demo_student') {
+      void this.saveLevelRecordToCloud(userId, worldId, levelNumber, record)
+    }
+
     return {
       success: true,
       completedTasksCount: record.completedTasks,
@@ -462,6 +627,11 @@ export const progressionService = {
     const totalStars = calculateTotalStars(progress)
 
     this.saveProgress(progress)
+
+    // Automatically persist to Supabase if authenticated
+    if (userId && userId !== 'demo_student') {
+      void this.saveLevelRecordToCloud(userId, worldId, levelNumber, record)
+    }
 
     return {
       success: true,

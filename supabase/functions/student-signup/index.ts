@@ -52,6 +52,7 @@ serve(async (req: Request) => {
       password,
       avatarId = "panda",
       gradeLevel = 3,
+      classCode,
     } = body
 
     // 1. Input Validation
@@ -87,10 +88,24 @@ serve(async (req: Request) => {
       )
     }
 
+    if (
+      typeof classCode !== "string" ||
+      classCode.trim().length < 3 ||
+      classCode.trim().length > 20
+    ) {
+      return new Response(
+        JSON.stringify({
+          error: "Please enter your teacher's classroom joining code (e.g. BLOOMI-3A).",
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
     const validAvatars = ["lion", "panda", "fox", "dolphin"]
     const sanitizedAvatar = validAvatars.includes(avatarId) ? avatarId : "panda"
     const sanitizedRegNo = registrationNumber.trim().toUpperCase()
     const sanitizedName = displayName.trim()
+    const sanitizedClassCode = classCode.trim().toUpperCase()
 
     // 2. Check rate limit
     if (isRateLimited(`${clientIp}_${sanitizedRegNo}`)) {
@@ -118,7 +133,31 @@ serve(async (req: Request) => {
     const adminClient = createClient(supabaseUrl, supabaseServiceKey)
     const anonClient = createClient(supabaseUrl, supabaseAnonKey)
 
-    // 4. Check if registration number is already registered
+    // 4. Validate classroom joining code
+    const { data: matchedClass, error: classLookupErr } = await adminClient
+      .from("classes")
+      .select("id, name, class_code, grade_level, teacher_id")
+      .ilike("class_code", sanitizedClassCode)
+      .maybeSingle()
+
+    if (classLookupErr) {
+      console.error("Error looking up classroom code:", classLookupErr)
+      return new Response(
+        JSON.stringify({ error: "Failed to verify classroom code. Please check your connection and try again." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
+    if (!matchedClass) {
+      return new Response(
+        JSON.stringify({
+          error: "The classroom code is invalid or expired. Please verify the code with your teacher.",
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
+    // 5. Check if registration number is already registered
     const { data: existingProfile, error: checkError } = await adminClient
       .from("profiles")
       .select("id, role, registration_number, display_name")
@@ -140,13 +179,13 @@ serve(async (req: Request) => {
       // If code is already assigned to an active profile, reject duplicate registration with clear guidance
       return new Response(
         JSON.stringify({
-          error: "This registration code is already in use. If this is your account, please switch to Sign In with your adventure password.",
+          error: "This registration code is already registered. If this is your account, please switch to Sign In with your adventure password.",
         }),
         { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       )
     }
 
-    // 5. Create Fresh Student Account via Auth Admin API
+    // 6. Create Fresh Student Account via Auth Admin API
     const safeId = sanitizedRegNo.toLowerCase().replace(/[^a-z0-9]/g, "")
     internalEmail = `stu_${safeId}@bloomi.internal`
 
@@ -194,52 +233,22 @@ serve(async (req: Request) => {
       .update({ avatar_id: sanitizedAvatar })
       .eq("id", authUserId)
 
-    // 5b. Enroll student into classroom join table (class_students)
+    // 7. Atomically enroll student into teacher's classroom (class_students)
     try {
-      let targetClassId: string | null = null
-      const regUpper = sanitizedRegNo
-      const prefix = regUpper.includes("-") ? regUpper.substring(0, regUpper.lastIndexOf("-")) : null
+      const { error: enrollErr } = await adminClient.from("class_students").upsert(
+        { class_id: matchedClass.id, student_id: authUserId },
+        { onConflict: "student_id" }
+      )
 
-      // Check for explicit classCode or prefix match (e.g. "BLOOMI-3A-01" -> "BLOOMI-3A")
-      const candidateCodes = [
-        typeof body.classCode === "string" ? body.classCode.trim().toUpperCase() : null,
-        regUpper,
-        prefix,
-      ].filter(Boolean) as string[]
-
-      for (const code of candidateCodes) {
-        const { data: matchedClass } = await adminClient
-          .from("classes")
-          .select("id")
-          .ilike("class_code", code)
-          .maybeSingle()
-        if (matchedClass) {
-          targetClassId = matchedClass.id
-          break
-        }
-      }
-
-      // If no code matched, assign to the primary active Grade 3 class
-      if (!targetClassId) {
-        const { data: defaultClass } = await adminClient
-          .from("classes")
-          .select("id")
-          .order("created_at", { ascending: true })
-          .limit(1)
-          .maybeSingle()
-        if (defaultClass) {
-          targetClassId = defaultClass.id
-        }
-      }
-
-      if (targetClassId) {
+      if (enrollErr) {
+        // Fallback for compound unique constraint (class_id, student_id)
         await adminClient.from("class_students").upsert(
-          { class_id: targetClassId, student_id: authUserId },
+          { class_id: matchedClass.id, student_id: authUserId },
           { onConflict: "class_id,student_id" }
         )
       }
     } catch (enrollErr) {
-      console.warn("Class enrollment note during student signup:", enrollErr)
+      console.warn("Class enrollment error during student signup:", enrollErr)
     }
 
     // 6. Authenticate newly created student via standard Supabase auth
@@ -275,6 +284,9 @@ serve(async (req: Request) => {
           registrationNumber: sanitizedRegNo,
           gradeLevel: typeof gradeLevel === "number" ? gradeLevel : 3,
           avatarId: sanitizedAvatar,
+          classId: matchedClass.id,
+          className: matchedClass.name,
+          classCode: matchedClass.class_code,
         },
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

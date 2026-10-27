@@ -24,7 +24,11 @@ import {
   Compass,
   AlertCircle,
   RefreshCw,
+  GraduationCap,
+  CheckCircle2,
+  UserPlus,
 } from 'lucide-react'
+import { classroomService, type StudentClassroomInfo } from '../services/classroom.service'
 
 interface ResumeTarget {
   worldId: WorldId
@@ -120,6 +124,13 @@ export const StudentHubPage: React.FC = () => {
   // Badge filter tab state: 'all' | 'earned' | 'in_progress'
   const [badgeFilter, setBadgeFilter] = useState<'all' | 'earned' | 'in_progress'>('all')
 
+  // Classroom membership state
+  const [classroomInfo, setClassroomInfo] = useState<StudentClassroomInfo | null>(null)
+  const [joinCodeInput, setJoinCodeInput] = useState<string>('')
+  const [isJoiningClass, setIsJoiningClass] = useState<boolean>(false)
+  const [joinClassError, setJoinClassError] = useState<string | null>(null)
+  const [joinClassSuccess, setJoinClassSuccess] = useState<string | null>(null)
+
   const studentId = user?.id || 'demo_student'
   const progress = progressionService.getProgress(studentId)
   const rewardSummary = progressionService.getRewardSummary(studentId)
@@ -135,6 +146,27 @@ export const StudentHubPage: React.FC = () => {
     sessionTrackingService.setActivityMode('portal')
   }, [])
 
+  // Load classroom and sync cloud progress
+  useEffect(() => {
+    let isMounted = true
+    const loadClassroomAndProgress = async () => {
+      try {
+        const info = await classroomService.getStudentClassroom(studentId)
+        if (isMounted) setClassroomInfo(info)
+
+        if (studentId !== 'demo_student') {
+          await progressionService.loadFromCloud(studentId)
+        }
+      } catch (err) {
+        console.warn('StudentHub classroom load note:', err)
+      }
+    }
+    loadClassroomAndProgress()
+    return () => {
+      isMounted = false
+    }
+  }, [studentId, _refreshCount])
+
   const handleSignOut = async () => {
     await logout()
     navigate('/')
@@ -147,6 +179,27 @@ export const StudentHubPage: React.FC = () => {
       setRefreshCount((c) => c + 1)
       setIsLoading(false)
     }, 400)
+  }
+
+  const handleJoinClassroomSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!joinCodeInput.trim()) return
+
+    setIsJoiningClass(true)
+    setJoinClassError(null)
+    setJoinClassSuccess(null)
+
+    const res = await classroomService.joinClassroom(studentId, joinCodeInput.trim())
+    if (res.success) {
+      setJoinClassSuccess(`Successfully joined ${res.className || 'your classroom'}!`)
+      setJoinCodeInput('')
+      const updatedInfo = await classroomService.getStudentClassroom(studentId)
+      setClassroomInfo(updatedInfo)
+      setTimeout(() => setJoinClassSuccess(null), 3000)
+    } else {
+      setJoinClassError(res.error || 'Failed to join classroom.')
+    }
+    setIsJoiningClass(false)
   }
 
   // Filtered badges count
@@ -357,6 +410,104 @@ export const StudentHubPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Classroom Membership Status Card */}
+      {classroomInfo?.enrolled ? (
+        <section
+          aria-label="Enrolled Classroom Details"
+          className="p-5 sm:p-6 rounded-3xl border-2 border-[#00f5ff]/40 bg-[#0e0520] shadow-[0_0_25px_rgba(0,245,255,0.15)] relative overflow-hidden transition-all"
+        >
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-[#160a33] text-[#00f5ff] border-2 border-[#00f5ff]/50 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(0,245,255,0.3)]">
+                <GraduationCap className="w-7 h-7" aria-hidden="true" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-black text-[#10b981] bg-[#10b981]/20 px-2.5 py-0.5 rounded-full border border-[#10b981]/40 uppercase tracking-wider">
+                    <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
+                    <span>Active Classroom Membership</span>
+                  </span>
+                  <span className="text-xs font-mono font-bold bg-[#ffd700]/20 text-[#ffd700] border border-[#ffd700]/40 px-2.5 py-0.5 rounded-md">
+                    Code: {classroomInfo.classCode}
+                  </span>
+                </div>
+                <h2 className="text-lg sm:text-xl font-extrabold font-fredoka text-white">
+                  {classroomInfo.className}
+                </h2>
+                <p className="text-xs sm:text-sm font-semibold text-purple-200/80">
+                  Educator: <span className="text-white font-bold">{classroomInfo.teacherName}</span> • Grade {classroomInfo.gradeLevel || 3}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-[#160a33] border border-[#a855f7]/30 rounded-2xl p-3 sm:max-w-xs text-xs text-purple-200/90 leading-relaxed shrink-0">
+              <p className="flex items-start gap-1.5">
+                <Sparkles className="w-4 h-4 text-[#ffd700] shrink-0 mt-0.5" aria-hidden="true" />
+                <span>
+                  All your stars, badges, and learning progress appear automatically in your teacher's portal.
+                </span>
+              </p>
+            </div>
+          </div>
+        </section>
+      ) : (
+        <section
+          aria-label="Join a Classroom"
+          className="p-5 sm:p-6 rounded-3xl border-2 border-[#ffd700]/50 bg-[#0e0520] shadow-[0_0_25px_rgba(255,215,0,0.15)] relative overflow-hidden"
+        >
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
+            <div className="space-y-1.5 max-w-lg">
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#ffd700] bg-[#ffd700]/15 px-2.5 py-0.5 rounded-full border border-[#ffd700]/40 uppercase tracking-wider">
+                <UserPlus className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>Classroom Connection</span>
+              </div>
+              <h2 className="text-lg sm:text-xl font-extrabold font-fredoka text-white">
+                Join Your Teacher's Classroom
+              </h2>
+              <p className="text-xs sm:text-sm text-purple-200/80">
+                Enter your teacher's unique joining code below to link your adventure pass and share your learning achievements with your educator.
+              </p>
+            </div>
+
+            <form onSubmit={handleJoinClassroomSubmit} className="w-full md:w-auto flex flex-col sm:flex-row items-center gap-3">
+              <div className="relative w-full sm:w-56">
+                <input
+                  type="text"
+                  value={joinCodeInput}
+                  onChange={(e) => setJoinCodeInput(e.target.value)}
+                  placeholder="e.g. BLOOMI-3A"
+                  disabled={isJoiningClass}
+                  className="w-full min-h-[44px] px-3.5 py-2 pl-9 rounded-xl border border-[#ffd700]/50 bg-[#160a33] text-white font-mono uppercase font-bold text-sm tracking-wider placeholder-purple-300/40 focus:outline-none focus:ring-2 focus:ring-[#ffd700]"
+                  required
+                />
+                <GraduationCap className="absolute left-2.5 top-3 w-4 h-4 text-[#ffd700]" aria-hidden="true" />
+              </div>
+              <button
+                type="submit"
+                disabled={isJoiningClass || !joinCodeInput.trim()}
+                className="w-full sm:w-auto min-h-[44px] px-5 py-2 rounded-xl text-sm font-extrabold bg-[#ffd700] text-[#06020e] hover:bg-[#f59e0b] shadow-[0_0_15px_#ffd700] flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isJoiningClass ? <span>Connecting...</span> : <span>Join Classroom</span>}
+              </button>
+            </form>
+          </div>
+
+          {joinClassError && (
+            <div className="mt-3 text-xs font-bold text-[#ff2a85] flex items-center gap-1.5">
+              <AlertCircle className="w-4 h-4" />
+              <span>{joinClassError}</span>
+            </div>
+          )}
+
+          {joinClassSuccess && (
+            <div className="mt-3 text-xs font-bold text-[#10b981] flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>{joinClassSuccess}</span>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Resume Learning / Continue Adventure Hero Banner */}
       <section

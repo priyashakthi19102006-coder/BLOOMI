@@ -45,6 +45,10 @@ export const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="teacher/student/:studentId"
+            element={<Navigate to="../students/:studentId" replace />}
+          />
 
           {/* Protected Student Routes */}
           <Route

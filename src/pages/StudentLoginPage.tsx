@@ -40,6 +40,13 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
   const [selectedAvatar, setSelectedAvatar] = useState<string>('panda')
   const [displayName, setDisplayName] = useState('')
   const [registrationNumber, setRegistrationNumber] = useState('')
+  const [classCode, setClassCode] = useState(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('code') || ''
+    } catch {
+      return ''
+    }
+  })
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -77,6 +84,7 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
   const validateSignUp = (
     name: string,
     regNo: string,
+    classroomCode: string,
     pwd: string,
     confirmPwd: string
   ): string | null => {
@@ -93,6 +101,10 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
     }
     if (!/^[A-Z0-9_-]+$/.test(trimmedRegNo)) {
       return 'Registration code may only contain letters, numbers, and hyphens (e.g. BLOOMI-3A-01).'
+    }
+    const trimmedClassCode = classroomCode.trim().toUpperCase()
+    if (!trimmedClassCode || trimmedClassCode.length < 3) {
+      return "Please enter your teacher's classroom joining code (e.g. BLOOMI-3A)."
     }
     if (!pwd || pwd.length < 6) {
       return 'Secret password must be at least 6 characters for safety.'
@@ -136,7 +148,13 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
     e.preventDefault()
     setLocalError(null)
 
-    const validationMsg = validateSignUp(displayName, registrationNumber, password, confirmPassword)
+    const validationMsg = validateSignUp(
+      displayName,
+      registrationNumber,
+      classCode,
+      password,
+      confirmPassword
+    )
     if (validationMsg) {
       setLocalError(validationMsg)
       return
@@ -155,12 +173,13 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
         displayName.trim(),
         registrationNumber.trim(),
         password,
+        classCode.trim(),
         selectedAvatar
       )
       const targetDestination = (location.state as any)?.from?.pathname || '/student/hub'
       navigate(targetDestination, { replace: true })
     } catch (err: any) {
-      setLocalError(err.message || 'Registration failed. Please check your school code and try again.')
+      setLocalError(err.message || 'Registration failed. Please check your classroom code and school code.')
     } finally {
       setIsSubmitting(false)
     }
@@ -508,7 +527,40 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
                 <User className="absolute left-3.5 top-3.5 w-4 h-4 text-[#00f5ff]" aria-hidden="true" />
               </div>
               <p className="text-[11px] text-[#d8b4fe] font-medium mt-1">
-                Your school or classroom code protects child privacy and connects you to your grade.
+                Your school code identifies your grade level and preserves your child privacy.
+              </p>
+            </div>
+
+            {/* Teacher Classroom Joining Code */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label
+                  htmlFor="signup-classroom-code"
+                  className="block text-xs font-extrabold uppercase tracking-wider text-[#d8b4fe]"
+                >
+                  4. Teacher's Classroom Joining Code
+                </label>
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#ffd700] bg-[#ffd700]/15 px-2 py-0.5 rounded-md border border-[#ffd700]/40">
+                  <GraduationCap className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>One-Time Joining Code</span>
+                </span>
+              </div>
+              <div className="relative">
+                <input
+                  id="signup-classroom-code"
+                  type="text"
+                  value={classCode}
+                  onChange={(e) => setClassCode(e.target.value)}
+                  placeholder="e.g. BLOOMI-3A"
+                  disabled={isSubmitting}
+                  autoComplete="off"
+                  className="w-full min-h-[48px] px-4 py-3 pl-10 rounded-xl border border-[#a855f7]/40 text-white uppercase placeholder-[#9382ad] font-bold focus:outline-none focus:ring-3 focus:ring-[#ffd700] focus:border-[#ffd700] tracking-wider bg-[#160a33]"
+                  required
+                />
+                <GraduationCap className="absolute left-3.5 top-3.5 w-4 h-4 text-[#ffd700]" aria-hidden="true" />
+              </div>
+              <p className="text-[11px] text-[#d8b4fe] font-medium mt-1">
+                Enter the unique code from your teacher. You only enter this once — your account will stay automatically linked!
               </p>
             </div>
 
@@ -518,7 +570,7 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
                 htmlFor="signup-password"
                 className="block text-xs font-extrabold uppercase tracking-wider text-[#d8b4fe] mb-2"
               >
-                4. Create a Secret Adventure Password
+                5. Create a Secret Adventure Password
               </label>
               <div className="relative">
                 <input
@@ -554,7 +606,7 @@ export const StudentLoginPage: React.FC<StudentLoginPageProps> = ({ initialMode 
                 htmlFor="signup-confirm-password"
                 className="block text-xs font-extrabold uppercase tracking-wider text-[#d8b4fe] mb-2"
               >
-                5. Confirm Secret Adventure Password
+                6. Confirm Secret Adventure Password
               </label>
               <div className="relative">
                 <input
