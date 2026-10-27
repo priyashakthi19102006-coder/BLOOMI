@@ -465,6 +465,60 @@ export const teacherService = {
     // REAL PRODUCTION SUPABASE DATABASE QUERY
     if (isSupabaseConfigured && supabase) {
       try {
+        // 0. Try high-performance secure stored procedure RPC first
+        try {
+          const { data: rpcRoster, error: rpcErr } = await (supabase.rpc as any)('get_teacher_roster')
+          if (!rpcErr && Array.isArray(rpcRoster) && rpcRoster.length > 0) {
+            const studentIds = rpcRoster.map((s: any) => s.id)
+            const { data: progressData } = await supabase
+              .from('student_level_progress')
+              .select('*')
+              .in('student_id', studentIds)
+            const allProgress = progressData || []
+
+            const enrolled: EnrolledStudent[] = rpcRoster.map((s: any) => {
+              const studentProgress = allProgress.filter((r) => r.student_id === s.id)
+              const completedLevels = studentProgress.filter((r) => r.completed)
+              const worldProgress: Record<WorldId, { completedLevels: number; currentLevel: number }> = {
+                writing: { completedLevels: 0, currentLevel: 1 },
+                speaking: { completedLevels: 0, currentLevel: 1 },
+                visual: { completedLevels: 0, currentLevel: 1 },
+                social: { completedLevels: 0, currentLevel: 1 },
+              }
+              ;(['writing', 'speaking', 'visual', 'social'] as WorldId[]).forEach((wId) => {
+                const worldRows = studentProgress.filter((r) => r.world_id === wId && r.completed)
+                const count = worldRows.length
+                const highest = worldRows.length > 0 ? Math.max(...worldRows.map((r) => r.level_number)) : 0
+                worldProgress[wId] = {
+                  completedLevels: count,
+                  currentLevel: Math.min(highest + 1, 50),
+                }
+              })
+
+              return {
+                id: s.id,
+                displayName: s.display_name,
+                registrationNumber: s.registration_number || 'UNASSIGNED',
+                gradeLevel: s.grade_level || 3,
+                avatarId: s.avatar_id || 'panda',
+                className: s.class_name || 'Grade 3 Blossom Explorers',
+                classCode: s.class_code || 'BLOOMI-3A',
+                teacherId,
+                lastActiveAt: studentProgress[0]?.completed_at || s.enrolled_at || s.last_active_at,
+                totalStars: s.total_stars || studentProgress.reduce((sum, r) => sum + (r.stars_earned || 0), 0),
+                completedLevelsCount: completedLevels.length,
+                earnedBadgesCount: Math.floor(completedLevels.length / 3),
+                worldProgress,
+                supportAccommodations: ['Standard Grade 3 Pacing'],
+                isDemo: false,
+              }
+            })
+            return enrolled
+          }
+        } catch (rpcEx) {
+          console.warn('get_teacher_roster RPC note:', rpcEx)
+        }
+
         // 1. Get classes taught by this teacher
         const { data: classesData, error: classesError } = await supabase
           .from('classes')
@@ -492,14 +546,13 @@ export const teacherService = {
         const studentIds = enrollments.map((e) => e.student_id)
 
         // 3. Query profiles for enrolled students
-        const { data: profilesData, error: profilesError } = await supabase
+        const { data: profilesData } = await supabase
           .from('profiles')
           .select('*')
           .in('id', studentIds)
 
-        if (profilesError || !profilesData || profilesData.length === 0) {
-          return []
-        }
+        const profilesMap = new Map<string, any>()
+        ;(profilesData || []).forEach((p) => profilesMap.set(p.id, p))
 
         // 4. Query student_level_progress for real recorded levels
         const { data: progressData } = await supabase
@@ -516,12 +569,12 @@ export const teacherService = {
         const allProgress = progressData || []
         const allSupport = supportData || []
 
-        const enrolled: EnrolledStudent[] = profilesData.map((p) => {
-          const enrollment = enrollments.find((e) => e.student_id === p.id)
-          const cls = enrollment ? classMap.get(enrollment.class_id) : undefined
-          const studentProgress = allProgress.filter((r) => r.student_id === p.id)
+        const enrolled: EnrolledStudent[] = enrollments.map((enrollment) => {
+          const p = profilesMap.get(enrollment.student_id)
+          const cls = classMap.get(enrollment.class_id)
+          const studentProgress = allProgress.filter((r) => r.student_id === enrollment.student_id)
 
-          const totalStars = studentProgress.reduce((sum, r) => sum + (r.stars_earned || 0), 0)
+          const totalStars = p?.total_stars || studentProgress.reduce((sum, r) => sum + (r.stars_earned || 0), 0)
           const completedLevels = studentProgress.filter((r) => r.completed)
 
           const worldProgress: Record<WorldId, { completedLevels: number; currentLevel: number }> = {
@@ -541,19 +594,19 @@ export const teacherService = {
             }
           })
 
-          const studentSupport = allSupport.filter((s) => s.student_id === p.id)
+          const studentSupport = allSupport.filter((s) => s.student_id === enrollment.student_id)
           const accommodations = studentSupport.map((s) => `${s.category}: ${s.details}`)
 
           return {
-            id: p.id,
-            displayName: p.display_name,
-            registrationNumber: p.registration_number || 'UNASSIGNED',
-            gradeLevel: p.grade_level || 3,
-            avatarId: p.avatar_id || 'panda',
+            id: enrollment.student_id,
+            displayName: p?.display_name || 'Enrolled Student',
+            registrationNumber: p?.registration_number || 'UNASSIGNED',
+            gradeLevel: p?.grade_level || 3,
+            avatarId: p?.avatar_id || 'panda',
             className: cls?.name || 'Grade 3 Classroom',
             classCode: cls?.class_code || 'BLOOMI',
             teacherId,
-            lastActiveAt: studentProgress[0]?.completed_at || p.created_at,
+            lastActiveAt: studentProgress[0]?.completed_at || enrollment.created_at,
             totalStars,
             completedLevelsCount: completedLevels.length,
             earnedBadgesCount: Math.floor(completedLevels.length / 3),

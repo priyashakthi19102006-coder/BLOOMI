@@ -308,7 +308,50 @@ END;
 $$;
 
 -- ---------------------------------------------------------------------
--- 5. PERMISSIONS & RLS VERIFICATION
+-- 4c. SECURE RPC: GET TEACHER ROSTER (Bypasses client-side RLS join blockages)
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.get_teacher_roster()
+RETURNS jsonb
+SECURITY DEFINER
+SET search_path = public, pg_temp
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_teacher_id UUID;
+  v_students jsonb;
+BEGIN
+  v_teacher_id := auth.uid();
+  IF v_teacher_id IS NULL THEN
+    RAISE EXCEPTION 'Authentication required.';
+  END IF;
+
+  SELECT coalesce(jsonb_agg(
+    jsonb_build_object(
+      'id', p.id,
+      'display_name', p.display_name,
+      'registration_number', coalesce(p.registration_number, 'UNASSIGNED'),
+      'grade_level', coalesce(p.grade_level, 3),
+      'avatar_id', coalesce(p.avatar_id, 'panda'),
+      'class_id', c.id,
+      'class_name', c.name,
+      'class_code', c.class_code,
+      'enrolled_at', cs.created_at,
+      'last_active_at', p.created_at,
+      'total_stars', coalesce(p.total_stars, 0)
+    ) ORDER BY cs.created_at DESC
+  ), '[]'::jsonb)
+  INTO v_students
+  FROM public.class_students cs
+  JOIN public.classes c ON c.id = cs.class_id
+  JOIN public.profiles p ON p.id = cs.student_id
+  WHERE c.teacher_id = v_teacher_id;
+
+  RETURN v_students;
+END;
+$$;
+
+-- ---------------------------------------------------------------------
+-- 5. PERMISSIONS & RLS REPAIR
 -- ---------------------------------------------------------------------
 REVOKE ALL ON FUNCTION public.join_classroom_by_code(TEXT) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.join_classroom_by_code(TEXT) TO authenticated, service_role;
@@ -322,13 +365,82 @@ GRANT EXECUTE ON FUNCTION public.ensure_teacher_classroom(TEXT) TO authenticated
 REVOKE ALL ON FUNCTION public.enroll_student_in_classroom(UUID, TEXT) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.enroll_student_in_classroom(UUID, TEXT) TO authenticated, service_role;
 
--- Ensure student select policy on class_students exists and is non-recursive
+REVOKE ALL ON FUNCTION public.get_teacher_roster() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_teacher_roster() TO authenticated, service_role;
+
+-- Allow authenticated users to look up classes (for classroom joining)
+DROP POLICY IF EXISTS "classes_student_select" ON public.classes;
+CREATE POLICY "classes_student_select"
+  ON public.classes
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+-- Ensure teacher can read enrolled students' profiles and lookup student by code
+DROP POLICY IF EXISTS "profiles_teacher_read_students" ON public.profiles;
+CREATE POLICY "profiles_teacher_read_students"
+  ON public.profiles
+  FOR SELECT
+  TO authenticated
+  USING (
+    public.profiles.id = auth.uid()
+    OR
+    EXISTS (
+      SELECT 1 FROM public.class_students cs
+      JOIN public.classes c ON c.id = cs.class_id
+      WHERE cs.student_id = public.profiles.id
+        AND c.teacher_id = auth.uid()
+    )
+    OR
+    (
+      public.profiles.role = 'student'
+      AND EXISTS (
+        SELECT 1 FROM public.profiles tp
+        WHERE tp.id = auth.uid() AND tp.role IN ('teacher', 'admin')
+      )
+    )
+  );
+
+-- Ensure class_students policies for teacher and student
+DROP POLICY IF EXISTS "class_students_teacher_select" ON public.class_students;
+CREATE POLICY "class_students_teacher_select"
+  ON public.class_students
+  FOR SELECT
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.classes c
+      WHERE c.id = public.class_students.class_id
+        AND c.teacher_id = auth.uid()
+    )
+  );
+
+DROP POLICY IF EXISTS "class_students_teacher_insert" ON public.class_students;
+CREATE POLICY "class_students_teacher_insert"
+  ON public.class_students
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.classes c
+      WHERE c.id = public.class_students.class_id
+        AND c.teacher_id = auth.uid()
+    )
+  );
+
 DROP POLICY IF EXISTS "class_students_student_select" ON public.class_students;
 CREATE POLICY "class_students_student_select"
   ON public.class_students
   FOR SELECT
   TO authenticated
   USING (student_id = auth.uid());
+
+DROP POLICY IF EXISTS "class_students_student_insert" ON public.class_students;
+CREATE POLICY "class_students_student_insert"
+  ON public.class_students
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (student_id = auth.uid());
 
 -- ---------------------------------------------------------------------
 -- 6. IDEMPOTENT INITIAL CLASSROOM PROVISIONING (BLOOMI-3A)
